@@ -9,10 +9,8 @@ type IncreaseLiquidityAccounts = {
   poolState: PublicKey;
   protocolPosition: PublicKey;
   personalPosition: PublicKey;
-  tickLower: PublicKey;
-  tickUpper: PublicKey;
-  tickBitmapLower: PublicKey;
-  tickBitmapUpper: PublicKey;
+  tickArrayLower: PublicKey;
+  tickArrayUpper: PublicKey;
   tokenAccount0: PublicKey;
   tokenAccount1: PublicKey;
   tokenVault0: PublicKey;

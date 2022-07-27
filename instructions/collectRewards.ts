@@ -12,8 +12,8 @@ type CollectRewardsAccounts = {
   poolState: PublicKey;
   protocolPosition: PublicKey;
   personalPosition: PublicKey;
-  tickLower: PublicKey;
-  tickUpper: PublicKey;
+  tickArrayLower: PublicKey;
+  tickArrayUpper: PublicKey;
   tokenProgram: PublicKey;
   remainings: AccountMeta[];
 };
@@ -28,8 +28,8 @@ export function collectRewardsInstruction(
     poolState,
     protocolPosition,
     personalPosition,
-    tickLower,
-    tickUpper,
+    tickArrayLower,
+    tickArrayUpper,
     tokenProgram,
   } = accounts;
 
@@ -41,8 +41,8 @@ export function collectRewardsInstruction(
       personalPosition,
       poolState,
       protocolPosition,
-      tickLower,
-      tickUpper,
+      tickArrayLower,
+      tickArrayUpper,
       tokenProgram,
     })
     .remainingAccounts(accounts.remainings)

@@ -11,11 +11,14 @@ export type CreateAmmConfigAccounts = {
   
   export function createAmmConfigInstruction(
     program: Program<AmmCore>,
+    index:number,
+    tickSpacing:number,
+    globalFeeRate:number,
     protocolFeeRate: number,
     accounts: CreateAmmConfigAccounts
   ): Promise<TransactionInstruction> {
     return program.methods
-      .createAmmConfig(protocolFeeRate)
+      .createAmmConfig(index,tickSpacing,globalFeeRate,protocolFeeRate)
       .accounts(accounts)
       .instruction();
   }

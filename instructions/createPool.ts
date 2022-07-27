@@ -7,7 +7,6 @@ type CreatePoolAccounts = {
   ammConfig: PublicKey;
   tokenMint0: PublicKey;
   tokenMint1: PublicKey;
-  feeState: PublicKey;
   poolState: PublicKey;
   initialFirstObservation: PublicKey;
   tokenVault0: PublicKey;

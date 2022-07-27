@@ -22,6 +22,7 @@ const {
   } = metaplex.programs;
 
 export async function getAmmConfigAddress(
+  index:number,
   programId: PublicKey
 ): Promise<[PublicKey, number]> {
   const [address, bump] = await PublicKey.findProgramAddress([AMM_CONFIG_SEED], programId);
