@@ -100,7 +100,7 @@ export type AmmCore = {
           "isSigner": false
         },
         {
-          "name": "initialFirstObservation",
+          "name": "observationState",
           "isMut": true,
           "isSigner": false
         },
@@ -314,32 +314,6 @@ export type AmmCore = {
       ]
     },
     {
-      "name": "increaseObservation",
-      "accounts": [
-        {
-          "name": "payer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "poolState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "observationAccountBumps",
-          "type": "bytes"
-        }
-      ]
-    },
-    {
       "name": "setProtocolFeeRate",
       "accounts": [
         {
@@ -485,16 +459,6 @@ export type AmmCore = {
         },
         {
           "name": "tokenVault1",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "lastObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nextObservation",
           "isMut": true,
           "isSigner": false
         },
@@ -659,16 +623,6 @@ export type AmmCore = {
           "isSigner": false
         },
         {
-          "name": "lastObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nextObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
@@ -747,16 +701,6 @@ export type AmmCore = {
           "isSigner": false
         },
         {
-          "name": "lastObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nextObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "recipientTokenAccount0",
           "isMut": true,
           "isSigner": false
@@ -827,16 +771,6 @@ export type AmmCore = {
         },
         {
           "name": "tickArrayUpper",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "lastObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nextObservation",
           "isMut": true,
           "isSigner": false
         },
@@ -921,12 +855,7 @@ export type AmmCore = {
           "isSigner": false
         },
         {
-          "name": "lastObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nextObservation",
+          "name": "observationState",
           "isMut": true,
           "isSigner": false
         },
@@ -1029,28 +958,52 @@ export type AmmCore = {
         "kind": "struct",
         "fields": [
           {
-            "name": "bump",
-            "type": "u8"
+            "name": "initialized",
+            "type": "bool"
           },
           {
-            "name": "index",
-            "type": "u16"
+            "name": "observations",
+            "type": {
+              "array": [
+                {
+                  "defined": "Observation"
+                },
+                1000
+              ]
+            }
           },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u128",
+                5
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "observation",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
             "name": "blockTimestamp",
             "type": "u32"
           },
           {
-            "name": "tickCumulative",
-            "type": "i64"
-          },
-          {
-            "name": "secondsPerLiquidityCumulativeX64",
+            "name": "sqrtPriceX64",
             "type": "u128"
           },
           {
-            "name": "initialized",
-            "type": "bool"
+            "name": "cumulativeTimePriceX64",
+            "type": "u128"
+          },
+          {
+            "name": "padding",
+            "type": "u128"
           }
         ]
       }
@@ -1085,11 +1038,11 @@ export type AmmCore = {
             "type": "u128"
           },
           {
-            "name": "feeGrowthInside0Last",
+            "name": "feeGrowthInside0LastX64",
             "type": "u128"
           },
           {
-            "name": "feeGrowthInside1Last",
+            "name": "feeGrowthInside1LastX64",
             "type": "u128"
           },
           {
@@ -1148,6 +1101,18 @@ export type AmmCore = {
             "type": "publicKey"
           },
           {
+            "name": "observationKey",
+            "type": "publicKey"
+          },
+          {
+            "name": "mint0Decimals",
+            "type": "u8"
+          },
+          {
+            "name": "mint1Decimals",
+            "type": "u8"
+          },
+          {
             "name": "tickSpacing",
             "type": "u16"
           },
@@ -1168,19 +1133,15 @@ export type AmmCore = {
             "type": "u16"
           },
           {
-            "name": "observationCardinality",
+            "name": "observationUpdateDuration",
             "type": "u16"
           },
           {
-            "name": "observationCardinalityNext",
-            "type": "u16"
-          },
-          {
-            "name": "feeGrowthGlobal0",
+            "name": "feeGrowthGlobal0X64",
             "type": "u128"
           },
           {
-            "name": "feeGrowthGlobal1",
+            "name": "feeGrowthGlobal1X64",
             "type": "u128"
           },
           {
@@ -1210,7 +1171,7 @@ export type AmmCore = {
       }
     },
     {
-      "name": "procotolPositionState",
+      "name": "protocolPositionState",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1311,18 +1272,6 @@ export type AmmCore = {
             "type": "u128"
           },
           {
-            "name": "tickCumulativeOutside",
-            "type": "i64"
-          },
-          {
-            "name": "secondsPerLiquidityOutsideX64",
-            "type": "u128"
-          },
-          {
-            "name": "secondsOutside",
-            "type": "u32"
-          },
-          {
             "name": "rewardGrowthsOutside",
             "type": {
               "array": [
@@ -1366,7 +1315,7 @@ export type AmmCore = {
         "kind": "struct",
         "fields": [
           {
-            "name": "growthInsideLast",
+            "name": "growthInsideLastX64",
             "type": "u128"
           },
           {
@@ -1496,26 +1445,31 @@ export type AmmCore = {
       ]
     },
     {
-      "name": "IncreaseObservationCardinalityNext",
+      "name": "CreatePersonalPositionEvent",
       "fields": [
         {
-          "name": "observationCardinalityNextOld",
-          "type": "u16",
+          "name": "poolState",
+          "type": "publicKey",
           "index": false
         },
         {
-          "name": "observationCardinalityNextNew",
-          "type": "u16",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "IncreaseLiquidityEvent",
-      "fields": [
-        {
-          "name": "positionNftMint",
+          "name": "minter",
           "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "nftOwner",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "tickLowerIndex",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "tickUpperIndex",
+          "type": "i32",
           "index": false
         },
         {
@@ -1524,19 +1478,19 @@ export type AmmCore = {
           "index": false
         },
         {
-          "name": "amount0",
+          "name": "depositAmount0",
           "type": "u64",
           "index": false
         },
         {
-          "name": "amount1",
+          "name": "depositAmount1",
           "type": "u64",
           "index": false
         }
       ]
     },
     {
-      "name": "DecreaseLiquidityEvent",
+      "name": "ChangeLiquidityEvent",
       "fields": [
         {
           "name": "positionNftMint",
@@ -1728,91 +1682,6 @@ export type AmmCore = {
         {
           "name": "tick",
           "type": "i32",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "CreatePersonalPositionEvent",
-      "fields": [
-        {
-          "name": "poolState",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "minter",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "nftOwner",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "tickLowerIndex",
-          "type": "i32",
-          "index": false
-        },
-        {
-          "name": "tickUpperIndex",
-          "type": "i32",
-          "index": false
-        },
-        {
-          "name": "liquidity",
-          "type": "u128",
-          "index": false
-        },
-        {
-          "name": "depositAmount0",
-          "type": "u64",
-          "index": false
-        },
-        {
-          "name": "depositAmount1",
-          "type": "u64",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "BurnEvent",
-      "fields": [
-        {
-          "name": "poolState",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "owner",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "tickLowerIndex",
-          "type": "i32",
-          "index": false
-        },
-        {
-          "name": "tickUpperIndex",
-          "type": "i32",
-          "index": false
-        },
-        {
-          "name": "amount",
-          "type": "u64",
-          "index": false
-        },
-        {
-          "name": "amount0",
-          "type": "u64",
-          "index": false
-        },
-        {
-          "name": "amount1",
-          "type": "u64",
           "index": false
         }
       ]
@@ -2054,7 +1923,7 @@ export const IDL: AmmCore = {
           "isSigner": false
         },
         {
-          "name": "initialFirstObservation",
+          "name": "observationState",
           "isMut": true,
           "isSigner": false
         },
@@ -2268,32 +2137,6 @@ export const IDL: AmmCore = {
       ]
     },
     {
-      "name": "increaseObservation",
-      "accounts": [
-        {
-          "name": "payer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "poolState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "systemProgram",
-          "isMut": false,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "observationAccountBumps",
-          "type": "bytes"
-        }
-      ]
-    },
-    {
       "name": "setProtocolFeeRate",
       "accounts": [
         {
@@ -2439,16 +2282,6 @@ export const IDL: AmmCore = {
         },
         {
           "name": "tokenVault1",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "lastObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nextObservation",
           "isMut": true,
           "isSigner": false
         },
@@ -2613,16 +2446,6 @@ export const IDL: AmmCore = {
           "isSigner": false
         },
         {
-          "name": "lastObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nextObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "tokenProgram",
           "isMut": false,
           "isSigner": false
@@ -2701,16 +2524,6 @@ export const IDL: AmmCore = {
           "isSigner": false
         },
         {
-          "name": "lastObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nextObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
           "name": "recipientTokenAccount0",
           "isMut": true,
           "isSigner": false
@@ -2781,16 +2594,6 @@ export const IDL: AmmCore = {
         },
         {
           "name": "tickArrayUpper",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "lastObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nextObservation",
           "isMut": true,
           "isSigner": false
         },
@@ -2875,12 +2678,7 @@ export const IDL: AmmCore = {
           "isSigner": false
         },
         {
-          "name": "lastObservation",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "nextObservation",
+          "name": "observationState",
           "isMut": true,
           "isSigner": false
         },
@@ -2983,28 +2781,52 @@ export const IDL: AmmCore = {
         "kind": "struct",
         "fields": [
           {
-            "name": "bump",
-            "type": "u8"
+            "name": "initialized",
+            "type": "bool"
           },
           {
-            "name": "index",
-            "type": "u16"
+            "name": "observations",
+            "type": {
+              "array": [
+                {
+                  "defined": "Observation"
+                },
+                1000
+              ]
+            }
           },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u128",
+                5
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "observation",
+      "type": {
+        "kind": "struct",
+        "fields": [
           {
             "name": "blockTimestamp",
             "type": "u32"
           },
           {
-            "name": "tickCumulative",
-            "type": "i64"
-          },
-          {
-            "name": "secondsPerLiquidityCumulativeX64",
+            "name": "sqrtPriceX64",
             "type": "u128"
           },
           {
-            "name": "initialized",
-            "type": "bool"
+            "name": "cumulativeTimePriceX64",
+            "type": "u128"
+          },
+          {
+            "name": "padding",
+            "type": "u128"
           }
         ]
       }
@@ -3039,11 +2861,11 @@ export const IDL: AmmCore = {
             "type": "u128"
           },
           {
-            "name": "feeGrowthInside0Last",
+            "name": "feeGrowthInside0LastX64",
             "type": "u128"
           },
           {
-            "name": "feeGrowthInside1Last",
+            "name": "feeGrowthInside1LastX64",
             "type": "u128"
           },
           {
@@ -3102,6 +2924,18 @@ export const IDL: AmmCore = {
             "type": "publicKey"
           },
           {
+            "name": "observationKey",
+            "type": "publicKey"
+          },
+          {
+            "name": "mint0Decimals",
+            "type": "u8"
+          },
+          {
+            "name": "mint1Decimals",
+            "type": "u8"
+          },
+          {
             "name": "tickSpacing",
             "type": "u16"
           },
@@ -3122,19 +2956,15 @@ export const IDL: AmmCore = {
             "type": "u16"
           },
           {
-            "name": "observationCardinality",
+            "name": "observationUpdateDuration",
             "type": "u16"
           },
           {
-            "name": "observationCardinalityNext",
-            "type": "u16"
-          },
-          {
-            "name": "feeGrowthGlobal0",
+            "name": "feeGrowthGlobal0X64",
             "type": "u128"
           },
           {
-            "name": "feeGrowthGlobal1",
+            "name": "feeGrowthGlobal1X64",
             "type": "u128"
           },
           {
@@ -3164,7 +2994,7 @@ export const IDL: AmmCore = {
       }
     },
     {
-      "name": "procotolPositionState",
+      "name": "protocolPositionState",
       "type": {
         "kind": "struct",
         "fields": [
@@ -3265,18 +3095,6 @@ export const IDL: AmmCore = {
             "type": "u128"
           },
           {
-            "name": "tickCumulativeOutside",
-            "type": "i64"
-          },
-          {
-            "name": "secondsPerLiquidityOutsideX64",
-            "type": "u128"
-          },
-          {
-            "name": "secondsOutside",
-            "type": "u32"
-          },
-          {
             "name": "rewardGrowthsOutside",
             "type": {
               "array": [
@@ -3320,7 +3138,7 @@ export const IDL: AmmCore = {
         "kind": "struct",
         "fields": [
           {
-            "name": "growthInsideLast",
+            "name": "growthInsideLastX64",
             "type": "u128"
           },
           {
@@ -3450,26 +3268,31 @@ export const IDL: AmmCore = {
       ]
     },
     {
-      "name": "IncreaseObservationCardinalityNext",
+      "name": "CreatePersonalPositionEvent",
       "fields": [
         {
-          "name": "observationCardinalityNextOld",
-          "type": "u16",
+          "name": "poolState",
+          "type": "publicKey",
           "index": false
         },
         {
-          "name": "observationCardinalityNextNew",
-          "type": "u16",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "IncreaseLiquidityEvent",
-      "fields": [
-        {
-          "name": "positionNftMint",
+          "name": "minter",
           "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "nftOwner",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "tickLowerIndex",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "tickUpperIndex",
+          "type": "i32",
           "index": false
         },
         {
@@ -3478,19 +3301,19 @@ export const IDL: AmmCore = {
           "index": false
         },
         {
-          "name": "amount0",
+          "name": "depositAmount0",
           "type": "u64",
           "index": false
         },
         {
-          "name": "amount1",
+          "name": "depositAmount1",
           "type": "u64",
           "index": false
         }
       ]
     },
     {
-      "name": "DecreaseLiquidityEvent",
+      "name": "ChangeLiquidityEvent",
       "fields": [
         {
           "name": "positionNftMint",
@@ -3682,91 +3505,6 @@ export const IDL: AmmCore = {
         {
           "name": "tick",
           "type": "i32",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "CreatePersonalPositionEvent",
-      "fields": [
-        {
-          "name": "poolState",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "minter",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "nftOwner",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "tickLowerIndex",
-          "type": "i32",
-          "index": false
-        },
-        {
-          "name": "tickUpperIndex",
-          "type": "i32",
-          "index": false
-        },
-        {
-          "name": "liquidity",
-          "type": "u128",
-          "index": false
-        },
-        {
-          "name": "depositAmount0",
-          "type": "u64",
-          "index": false
-        },
-        {
-          "name": "depositAmount1",
-          "type": "u64",
-          "index": false
-        }
-      ]
-    },
-    {
-      "name": "BurnEvent",
-      "fields": [
-        {
-          "name": "poolState",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "owner",
-          "type": "publicKey",
-          "index": false
-        },
-        {
-          "name": "tickLowerIndex",
-          "type": "i32",
-          "index": false
-        },
-        {
-          "name": "tickUpperIndex",
-          "type": "i32",
-          "index": false
-        },
-        {
-          "name": "amount",
-          "type": "u64",
-          "index": false
-        },
-        {
-          "name": "amount0",
-          "type": "u64",
-          "index": false
-        },
-        {
-          "name": "amount1",
-          "type": "u64",
           "index": false
         }
       ]
