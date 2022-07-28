@@ -6,7 +6,7 @@ import { AmmCore } from "../../anchor/amm_core";
 export type CreateAmmConfigAccounts = {
     owner: PublicKey;
     ammConfig: PublicKey;
-    systemprogram: PublicKey;
+    systemProgram: PublicKey;
   };
   
   export function createAmmConfigInstruction(

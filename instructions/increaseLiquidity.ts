@@ -15,8 +15,6 @@ type IncreaseLiquidityAccounts = {
   tokenAccount1: PublicKey;
   tokenVault0: PublicKey;
   tokenVault1: PublicKey;
-  lastObservation: PublicKey;
-  nextObservation: PublicKey;
   tokenProgram: PublicKey;
 };
 

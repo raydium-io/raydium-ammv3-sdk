@@ -5,15 +5,16 @@ import {
   PoolState,
   TickState,
   PositionState,
-  FeeState,
   ObservationState,
+  Observation,
   AmmConfig,
   PositionRewardInfo,
   RewardInfo,
+  TickArrayState,
 } from "./states";
 
 export class StateFetcher {
- private program: Program<AmmCore>;
+  private program: Program<AmmCore>;
 
   constructor(program: Program<AmmCore>) {
     this.program = program;
@@ -38,22 +39,20 @@ export class StateFetcher {
       tokenMint1,
       tokenVault0,
       tokenVault1,
-      feeRate,
-      tick,
+      tickCurrent,
       tickSpacing,
       liquidity,
       sqrtPriceX64,
-      feeGrowthGlobal0,
-      feeGrowthGlobal1,
+      feeGrowthGlobal0X64,
+      feeGrowthGlobal1X64,
       protocolFeesToken0,
       protocolFeesToken1,
       rewardLastUpdatedTimestamp,
       rewardInfos,
       observationIndex,
-      observationCardinality,
-      observationCardinalityNext,
+      observationKey,
+      observationUpdateDuration,
     } = await this.program.account.poolState.fetch(address);
-
 
     return {
       bump,
@@ -63,64 +62,58 @@ export class StateFetcher {
       tokenMint1,
       tokenVault0,
       tokenVault1,
-      feeRate,
-      tick,
+      tickCurrent,
       tickSpacing,
       liquidity,
       sqrtPriceX64,
-      feeGrowthGlobal0,
-      feeGrowthGlobal1,
+      feeGrowthGlobal0X64,
+      feeGrowthGlobal1X64,
       protocolFeesToken0,
       protocolFeesToken1,
       rewardLastUpdatedTimestamp,
       // rewardInfos,
       observationIndex,
-      observationCardinality,
-      observationCardinalityNext,
+      observationKey,
+      observationUpdateDuration,
     };
   }
 
-  public async getTickState(address: PublicKey): Promise<TickState> {
-    const {
-      bump,
-      tick,
-      liquidityNet,
-      liquidityGross,
-      feeGrowthOutside0X64,
-      feeGrowthOutside1X64,
-      tickCumulativeOutside,
-      secondsPerLiquidityOutsideX64,
-      secondsOutside,
-      rewardGrowthsOutside,
-    } = await this.program.account.tickState.fetch(address);
+  public async getTickArrayState(address: PublicKey): Promise<TickArrayState> {
+    const { ammPool, startTickIndex, ticks } =
+      await this.program.account.tickArrayState.fetch(address);
 
+    // bump,
+    // tick,
+    // liquidityNet,
+    // liquidityGross,
+    // feeGrowthOutside0X64,
+    // feeGrowthOutside1X64,
+    // tickCumulativeOutside,
+    // secondsPerLiquidityOutsideX64,
+    // secondsOutside,
+    // rewardGrowthsOutside,
+
+    const tickStates = ticks as TickState[];
     return {
-      bump,
-      tick,
-      liquidityNet,
-      liquidityGross,
-      feeGrowthOutside0X64,
-      feeGrowthOutside1X64,
-      tickCumulativeOutside,
-      secondsPerLiquidityOutsideX64,
-      secondsOutside,
-      rewardGrowthsOutside,
+      ammPool,
+      startTickIndex,
+      ticks: tickStates,
     };
   }
 
-  public async getPositionState(address: PublicKey): Promise<PositionState> {
+  public async getPersonalPositionState(address: PublicKey): Promise<PositionState> {
     const {
       bump,
       nftMint,
       poolId,
-      tickLower,
-      tickUpper,
+      tickLowerIndex,
+      tickUpperIndex,
       liquidity,
       feeGrowthInside0Last,
       feeGrowthInside1Last,
       tokenFeesOwed0,
       tokenFeesOwed1,
-      rewardInfos
+      rewardInfos,
     } = await this.program.account.personalPositionState.fetch(address);
 
     // if (rewardInfos instanceof PositionRewardInfo){
@@ -131,47 +124,26 @@ export class StateFetcher {
       bump,
       nftMint,
       poolId,
-      tickLower,
-      tickUpper,
+      tickLowerIndex,
+      tickUpperIndex,
       liquidity,
-      feeGrowthInside0Last,
-      feeGrowthInside1Last,
+      feeGrowthInside0LastX64: feeGrowthInside0Last,
+      feeGrowthInside1LastX64: feeGrowthInside1Last,
       tokenFeesOwed0,
       tokenFeesOwed1,
       // rewardInfos,
     };
   }
 
-  public async getFeeState(address: PublicKey): Promise<FeeState> {
-    const { bump, fee, tickSpacing } =
-      await this.program.account.feeState.fetch(address);
-
-    return {
-      bump,
-      fee,
-      tickSpacing,
-    };
-  }
-
   public async getObservationState(
     address: PublicKey
   ): Promise<ObservationState> {
-    const {
-      bump,
-      index,
-      blockTimestamp,
-      tickCumulative,
-      secondsPerLiquidityCumulativeX64,
-      initialized,
-    } = await this.program.account.observationState.fetch(address);
+    const { initialized, observations } =
+      await this.program.account.observationState.fetch(address);
 
     return {
-      bump,
-      index,
-      blockTimestamp,
-      tickCumulative,
-      secondsPerLiquidityCumulativeX64,
       initialized,
+      observations: observations as Observation[],
     };
   }
 }

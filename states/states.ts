@@ -7,19 +7,16 @@ export type AmmConfig = {
   protocolFeeRate: number;
 };
 
-export type FeeState = {
-  bump: number;
-  fee: number;
-  tickSpacing: number;
+export type ObservationState = {
+  initialized: boolean;
+  observations: Observation[];
 };
 
-export type ObservationState = {
-  bump: number;
-  index: number;
+export type Observation = {
   blockTimestamp: number;
+  sqrtPriceX64:BN;
   tickCumulative: BN;
-  secondsPerLiquidityCumulativeX64: BN;
-  initialized: boolean;
+  CumulativeTimePriceX64: BN;
 };
 
 export type PoolState = {
@@ -30,20 +27,19 @@ export type PoolState = {
   tokenMint1: PublicKey;
   tokenVault0: PublicKey;
   tokenVault1: PublicKey;
-  feeRate: number;
-  tick: number;
+  tickCurrent: number;
   tickSpacing: number;
   liquidity: BN;
   sqrtPriceX64: BN;
-  feeGrowthGlobal0: BN;
-  feeGrowthGlobal1: BN;
+  feeGrowthGlobal0X64: BN;
+  feeGrowthGlobal1X64: BN;
   protocolFeesToken0: BN;
   protocolFeesToken1: BN;
   rewardLastUpdatedTimestamp: BN;
   // rewardInfos: RewardInfo[];
   observationIndex: number;
-  observationCardinality: number;
-  observationCardinalityNext: number;
+  observationKey: PublicKey;
+  observationUpdateDuration: number;
 };
 
 export type RewardInfo = {
@@ -64,13 +60,13 @@ export type PositionState = {
   bump: number;
   nftMint: PublicKey;
   poolId: PublicKey;
-  tickLower: number;
-  tickUpper: number;
+  tickLowerIndex: number;
+  tickUpperIndex: number;
   liquidity: BN;
   // Q64.64
-  feeGrowthInside0Last: BN;
+  feeGrowthInside0LastX64: BN;
   // Q64.64
-  feeGrowthInside1Last: BN;
+  feeGrowthInside1LastX64: BN;
   tokenFeesOwed0: BN;
   tokenFeesOwed1: BN;
   // rewardInfos: PositionRewardInfo[];
@@ -78,12 +74,17 @@ export type PositionState = {
 
 export type PositionRewardInfo = {
   // Q64.64
-  growthInsideLast: BN;
+  growthInsideLastX64: BN;
   rewardAmountOwed: BN;
 };
 
+export type TickArrayState = {
+  ammPool: PublicKey;
+  startTickIndex: number;
+  ticks: TickState[];
+};
+
 export type TickState = {
-  bump: number;
   tick: number;
   liquidityNet: BN;
   liquidityGross: BN;

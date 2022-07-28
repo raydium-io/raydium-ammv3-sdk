@@ -43,20 +43,20 @@ function signedRightShift(n0: BN, shiftBy: number, bitWidth: number) {
   return twoN0.fromTwos(bitWidth - shiftBy);
 }
 
-export function sqrtPriceX64ToPrice(sqrtPriceX64: BN): Decimal {
-  return Math.x64ToDecimal(sqrtPriceX64).pow(2);
-}
-
-export function priceToSqrtPriceX64(price: Decimal): BN {
-  return Math.decimalToX64(price.sqrt());
-}
-
 export abstract class SqrtPriceMath {
   /**
    * Cannot be constructed.
    */
   private constructor() {}
 
+  public static sqrtPriceX64ToPrice(sqrtPriceX64: BN): Decimal {
+    return Math.x64ToDecimal(sqrtPriceX64).pow(2);
+  }
+  
+  public static priceToSqrtPriceX64(price: Decimal): BN {
+    return Math.decimalToX64(price.sqrt());
+  }
+  
   /**
    *
    * @param sqrtPriceX64

@@ -15,7 +15,7 @@ export const BITMAP_SEED = Buffer.from(
 export const POSITION_SEED = Buffer.from(
   anchor.utils.bytes.utf8.encode("position")
 );
-export const TICK_SEED = Buffer.from(anchor.utils.bytes.utf8.encode("tick"));
+export const TICK_ARRAY_SEED = Buffer.from(anchor.utils.bytes.utf8.encode("tick_array"));
 export const OBSERVATION_SEED = Buffer.from(
   anchor.utils.bytes.utf8.encode("observation")
 );

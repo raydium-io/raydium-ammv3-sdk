@@ -5,9 +5,6 @@ import { PoolState, StateFetcher } from "../states";
 import { Context } from "../base";
 import { NEGATIVE_ONE, SwapMath, Math } from "../math";
 import { CacheDataProviderImpl } from "./cacheProviderImpl";
-import { CreatePoolAccounts } from "../instructions";
-import { Program } from "@project-serum/anchor";
-import { AmmCore } from "../anchor/amm_core";
 import Decimal from "decimal.js";
 
 export class AmmPool {
@@ -42,34 +39,15 @@ export class AmmPool {
     }
   }
 
-  /**
-   *
-   * @param program
-   * @param initialPriceX64
-   * @param accounts
-   * @returns
-   */
-  public static async createPool(
-    program: Program<AmmCore>,
-    initialPriceX64: BN,
-    accounts: CreatePoolAccounts
-  ) {
-    return await program.methods
-      .createPool(initialPriceX64)
-      .accounts(accounts)
-      .rpc();
-  }
-
-  public async reload(): Promise<PoolState> {
+  public async reload(readLoadCache?: boolean): Promise<PoolState> {
     const newState = await this.stateFetcher.getPoolState(this.address);
-    if (newState.tick != this.poolState.tick) {
-      await this.cacheDataProvider.loadTickAndBitmapCache(
-        this.poolState.tick,
+    if (readLoadCache) {
+      await this.cacheDataProvider.loadTickArrayCache(
+        this.poolState.tickCurrent,
         this.poolState.tickSpacing
       );
     }
-
-    this.poolState;
+    this.poolState = newState;
     return this.poolState;
   }
 

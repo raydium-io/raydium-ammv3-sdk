@@ -11,16 +11,12 @@ type OpenPositionAccounts = {
   poolState: PublicKey;
   protocolPosition: PublicKey;
   personalPosition: PublicKey;
-  tickLower: PublicKey;
-  tickUpper: PublicKey;
-  tickBitmapLower: PublicKey;
-  tickBitmapUpper: PublicKey;
+  tickArrayLower: PublicKey;
+  tickArrayUpper: PublicKey;
   tokenAccount0: PublicKey;
   tokenAccount1: PublicKey;
   tokenVault0: PublicKey;
   tokenVault1: PublicKey;
-  lastObservation: PublicKey;
-  nextObservation: PublicKey;
   metadataAccount: PublicKey;
   rent: PublicKey;
   systemProgram: PublicKey;
@@ -32,8 +28,8 @@ type OpenPositionAccounts = {
 type OpenPositionArgs = {
   tickLowerIndex: number;
   tickUpperIndex: number;
-  wordLowerIndex: number;
-  wordUpperIndex: number;
+  tickArrayLowerStartIndex: number;
+  tickArrayUpperStartIndex: number;
   amount0Desired: BN;
   amount1Desired: BN;
   amount0Min: BN;
@@ -48,8 +44,8 @@ export function openPositionInstruction(
   const {
     tickLowerIndex,
     tickUpperIndex,
-    wordLowerIndex,
-    wordUpperIndex,
+    tickArrayLowerStartIndex,
+    tickArrayUpperStartIndex,
     amount0Desired,
     amount1Desired,
     amount0Min,
@@ -60,8 +56,8 @@ export function openPositionInstruction(
     .openPosition(
       tickLowerIndex,
       tickUpperIndex,
-      wordLowerIndex,
-      wordUpperIndex,
+      tickArrayLowerStartIndex,
+      tickArrayUpperStartIndex,
       amount0Desired,
       amount1Desired,
       amount0Min,

@@ -9,10 +9,11 @@ import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 import { AmmPool, CacheDataProviderImpl } from "./pool";
-import { SqrtPriceMath, LiquidityMath, sqrtPriceX64ToPrice } from "./math";
+import { SqrtPriceMath, LiquidityMath } from "./math";
 import { StateFetcher } from "./states";
 
 import {
+  accountExist,
   getAmmConfigAddress,
   getPoolAddress,
   getPersonalPositionAddress,
@@ -27,6 +28,8 @@ import {
   swapBaseIn,
   swapBaseOut,
   swapRouterBaseIn,
+  createPool,
+  createAmmConfig,
 } from "./instructions";
 
 const {
@@ -43,6 +46,7 @@ import {
   SystemProgram,
 } from "@solana/web3.js";
 import { Context, NodeWallet } from "./base";
+import Decimal from "decimal.js";
 
 const SUPER_ADMIN_SECRET_KEY = new Uint8Array([
   18, 52, 81, 206, 137, 36, 192, 182, 13, 66, 109, 118, 114, 207, 71, 49, 105,
@@ -73,6 +77,7 @@ describe("test with given pool", async () => {
   );
 
   const url = "http://localhost:8899";
+  // const url = "https://api.devnet.solana.com";
   const confirmOptions: ConfirmOptions = {
     preflightCommitment: "processed",
     commitment: "processed",
@@ -91,7 +96,7 @@ describe("test with given pool", async () => {
     confirmOptions
   );
   const program = ctx.program;
-  
+
   const superAdmin = web3.Keypair.fromSecretKey(SUPER_ADMIN_SECRET_KEY);
   console.log("superAdmin:", superAdmin.publicKey.toString());
 
@@ -101,12 +106,7 @@ describe("test with given pool", async () => {
 
   const stateFetcher = new StateFetcher(program);
 
-  // find amm config address
-  const [ammConfig, ammConfigBump] = await getAmmConfigAddress(
-    0,
-    program.programId
-  );
-  console.log("amm config address: ", ammConfig.toString());
+  let ammConfig: PublicKey;
 
   const mintAuthority = new Keypair();
   // Tokens constituting the pool
@@ -128,7 +128,8 @@ describe("test with given pool", async () => {
 
   const nftMintAKeypair = new Keypair();
   const nftMintBKeypair = new Keypair();
-
+  console.log("nftMintAKeypair:", nftMintAKeypair.publicKey.toString());
+  console.log("nftMintBKeypair:", nftMintBKeypair.publicKey.toString());
   let personalPositionAState: web3.PublicKey;
   let personalPositionABump: number;
   let personalPositionBState: web3.PublicKey;
@@ -176,7 +177,7 @@ describe("test with given pool", async () => {
       token0 = token1;
       token1 = temp;
     }
-
+  
     console.log("Token 0", token0.publicKey.toString());
     console.log("Token 1", token1.publicKey.toString());
 
@@ -194,119 +195,89 @@ describe("test with given pool", async () => {
   });
 
   it("creates token accounts for position minter and airdrops to them", async () => {
-    ownerToken0Account = await Token.getAssociatedTokenAddress(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      token0.publicKey,
-      owner
-    );
-    ownerToken1Account = await Token.getAssociatedTokenAddress(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      token1.publicKey,
-      owner
-    );
-    ownerToken2Account = await Token.getAssociatedTokenAddress(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      token2.publicKey,
-      owner
-    );
-  });
+    ownerToken0Account = await token0.createAssociatedTokenAccount(owner);
+    ownerToken1Account = await token1.createAssociatedTokenAccount(owner);
+    ownerToken2Account = await token2.createAssociatedTokenAccount(owner);
+    await token0.mintTo(ownerToken0Account, mintAuthority, [], 100_000_000);
+    await token1.mintTo(ownerToken1Account, mintAuthority, [], 100_000_000);
+    await token2.mintTo(ownerToken2Account, mintAuthority, [], 100_000_000);
 
-  it("derive pool address", async () => {
-    [poolAState, poolAStateBump] = await getPoolAddress(
-      ammConfig,
-      token0.publicKey,
-      token1.publicKey,
-      program.programId,
-      100
-    );
-    console.log("got poolA address", poolAState.toString());
+    console.log("ownerToken0Account key: ", ownerToken0Account.toString());
+    console.log("ownerToken1Account key: ", ownerToken1Account.toString());
+    console.log("ownerToken2Account key: ", ownerToken2Account.toString());
+    // const positionANftAccount = await Token.getAssociatedTokenAddress(
+    //   ASSOCIATED_TOKEN_PROGRAM_ID,
+    //   TOKEN_PROGRAM_ID,
+    //   nftMintAKeypair.publicKey,
+    //   owner
+    // );
 
-    [poolBState, poolBStateBump] = await getPoolAddress(
-      ammConfig,
-      token0.publicKey,
-      token2.publicKey,
-      program.programId,
-      2500
-    );
-    console.log("got poolB address", poolBState.toString());
-
-    const cacheDataProvider = new CacheDataProviderImpl(program, poolAState);
-    const poolStateAData = await stateFetcher.getPoolState(poolAState);
-    await cacheDataProvider.loadTickAndBitmapCache(
-      poolStateAData.tick,
-      poolStateAData.tickSpacing
-    );
-
-    ammPoolA = new AmmPool(
-      ctx,
-      poolAState,
-      poolStateAData,
-      stateFetcher,
-      cacheDataProvider
-    );
-  });
-
-  it("find program accounts addresses for position creation", async () => {
-    [personalPositionAState, personalPositionABump] =
-      await getPersonalPositionAddress(
-        nftMintAKeypair.publicKey,
-        program.programId
-      );
-    console.log(
-      "personalPositionAState key: ",
-      personalPositionAState.toString()
-    );
-    [personalPositionBState, personalPositionBBump] =
-      await getPersonalPositionAddress(
-        nftMintBKeypair.publicKey,
-        program.programId
-      );
-    console.log(
-      "personalPositionBState key: ",
-      personalPositionBState.toString()
-    );
+    // console.log("positionANftAccount key: ", positionANftAccount.toString());
+    // const positionBNftAccount = await Token.getAssociatedTokenAddress(
+    //   ASSOCIATED_TOKEN_PROGRAM_ID,
+    //   TOKEN_PROGRAM_ID,
+    //   nftMintBKeypair.publicKey,
+    //   owner
+    // );
+    // console.log("positionBNftAccount key: ", positionBNftAccount.toString());
   });
 
   describe("init-amm-env", async () => {
     it("create amm config", async () => {
-      // feeRate/ 1e6 = 0.1
-
-      // if (await accountExist(connection, ammConfig)) {
-      //   return;
-      // }
-
-      const tx = await program.methods
-        .createAmmConfig(0, 10, 1000, 2500)
-        .accounts({
-          owner,
-          ammConfig,
-          systemProgram: SystemProgram.programId,
-        })
-        .signers([ownerKeyPair])
-        .rpc();
+      const [address1, _] = await getAmmConfigAddress(
+        1,
+        ctx.program.programId
+      );
+      ammConfig = address1;
+      if (await accountExist(connection, address1)) {
+        return;
+      }
+      const [address, ix] = await createAmmConfig(
+        ctx,
+        owner,
+        1,
+        10,
+        1000,
+        25000
+      );
+      const tx = await sendTransaction(
+        connection,
+        [ix],
+        [ownerKeyPair],
+        confirmOptions
+      );
       console.log("init amm config tx: ", tx);
 
-      const ammConfigData = await program.account.ammConfig.fetch(ammConfig);
+      const ammConfigData = await stateFetcher.getAmmConfig(ammConfig);
       console.log(
         "ammConfigData.bump: ",
         ammConfigData.bump,
-        "expectedBump:",
-        ammConfigBump,
         "owner:",
         ammConfigData.owner.toString(),
         "admin:",
         superAdmin.publicKey.toString()
       );
+    });
 
-      // assert.equal(
-      //   ammConfigData.owner.toString(),
-      //   superAdmin.publicKey.toString()
-      // );
-      // assert.equal(ammConfigData.protocolFeeRate, 100000);
-      // assert.equal(ammConfigData.bump, ammConfigBump);
+    it("create pool", async () => {
+      const [address, ixs] = await createPool(
+        ctx,
+        {
+          poolCreator: owner,
+          ammConfig: ammConfig,
+          tokenMint0: token0.publicKey,
+          tokenMint1: token1.publicKey,
+        },
+        new Decimal("1")
+      );
+      poolAState = address;
+      const tx = await sendTransaction(
+        connection,
+        ixs,
+        [ownerKeyPair],
+        confirmOptions
+      );
+      console.log("create pool tx: ", tx);
     });
   });
 
@@ -314,11 +285,6 @@ describe("test with given pool", async () => {
     it("open personal position", async () => {
       const cacheDataProvider = new CacheDataProviderImpl(program, poolAState);
       const poolStateAData = await stateFetcher.getPoolState(poolAState);
-      cacheDataProvider.loadTickAndBitmapCache(
-        poolStateAData.tick,
-        poolStateAData.tickSpacing
-      );
-
       ammPoolA = new AmmPool(
         ctx,
         poolAState,
@@ -326,14 +292,14 @@ describe("test with given pool", async () => {
         stateFetcher,
         cacheDataProvider
       );
-      console.log(poolStateAData);
       const additionalComputeBudgetInstruction =
         ComputeBudgetProgram.requestUnits({
           units: 400000,
           additionalFee: 0,
         });
-
-      const openIx = await openPosition(
+      
+      let openIx: TransactionInstruction;
+      [personalPositionAState,openIx] = await openPosition(
         {
           payer: owner,
           positionNftOwner: owner,
@@ -342,8 +308,8 @@ describe("test with given pool", async () => {
           token1Account: ownerToken1Account,
         },
         ammPoolA,
-        -20,
-        20,
+        -2* poolStateAData.tickSpacing,
+        2 * poolStateAData.tickSpacing,
         new BN(1_000_000),
         new BN(1_000_000)
       );
@@ -361,10 +327,10 @@ describe("test with given pool", async () => {
 
   describe("#increase_liquidity", () => {
     it("Add token to the position", async () => {
-      const personalPositionData = await stateFetcher.getPositionState(
+      const personalPositionData = await stateFetcher.getPersonalPositionState(
         personalPositionAState
       );
-
+      await ammPoolA.reload(true)
       const ix = await increaseLiquidity(
         {
           positionNftOwner: owner,
@@ -386,10 +352,10 @@ describe("test with given pool", async () => {
       console.log("increaseLiquidity tx: ", tx);
     });
   });
-
+  return
   describe("#decrease_liquidity", () => {
     it("burn liquidity as owner", async () => {
-      const personalPositionData = await stateFetcher.getPositionState(
+      const personalPositionData = await stateFetcher.getPersonalPositionState(
         personalPositionAState
       );
 
@@ -464,14 +430,14 @@ describe("test with given pool", async () => {
       console.log("swap tx:", tx);
     });
   });
-
+  return;
   describe("#swap_base_output_single", () => {
     it("zero for one swap base output", async () => {
       const amountOut = new BN(100_000);
       await ammPoolA.reload();
       console.log(
         "pool current tick:",
-        ammPoolA.poolState.tick,
+        ammPoolA.poolState.tickCurrent,
         "tick_spacing:",
         ammPoolA.poolState.tickSpacing
       );
@@ -500,7 +466,7 @@ describe("test with given pool", async () => {
     it("open second pool position", async () => {
       const cacheDataProvider = new CacheDataProviderImpl(program, poolBState);
       const poolStateAData = await stateFetcher.getPoolState(poolBState);
-      cacheDataProvider.loadTickAndBitmapCache(
+      cacheDataProvider.loadTickArrayCache(
         poolStateAData.tick,
         poolStateAData.tickSpacing
       );
@@ -578,7 +544,7 @@ describe("test with given pool", async () => {
       const amount0Max = new BN(10);
       const amount1Max = new BN(10);
 
-      const personalPositionData = await stateFetcher.getPositionState(
+      const personalPositionData = await stateFetcher.getPersonalPositionState(
         personalPositionAState
       );
       const ix = await collectFee(

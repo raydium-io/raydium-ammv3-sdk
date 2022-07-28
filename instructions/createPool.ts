@@ -8,7 +8,7 @@ type CreatePoolAccounts = {
   tokenMint0: PublicKey;
   tokenMint1: PublicKey;
   poolState: PublicKey;
-  initialFirstObservation: PublicKey;
+  observationState: PublicKey;
   tokenVault0: PublicKey;
   tokenVault1: PublicKey;
   tokenProgram: PublicKey;

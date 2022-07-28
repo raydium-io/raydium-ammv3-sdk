@@ -1,4 +1,4 @@
-import { BN } from "@project-serum/anchor";
+import { Program, BN } from "@project-serum/anchor";
 import {
   Connection,
   ConfirmOptions,
@@ -13,7 +13,7 @@ import {
 
 import { programs } from "@metaplex/js";
 import common from "mocha/lib/interfaces/common";
-import { tickPosition } from "../entities";
+import { getArrayStartIndex } from "../entities";
 import {
   SqrtPriceMath,
   LiquidityMath,
@@ -22,9 +22,7 @@ import {
 } from "../math";
 import {
   PoolState,
-  TickState,
   PositionState,
-  FeeState,
   ObservationState,
   AmmConfig,
   PositionRewardInfo,
@@ -34,17 +32,15 @@ import {
 import {
   accountExist,
   getAmmConfigAddress,
-  getFeeAddress,
   getPoolAddress,
   getPoolVaultAddress,
   getObservationAddress,
-  getTickAddress,
-  getTickBitmapAddress,
   getProtocolPositionAddress,
   getNftMetadataAddress,
   getPersonalPositionAddress,
   sleep,
   sendTransaction,
+  getTickArrayAddress,
 } from "../utils";
 
 import {
@@ -62,9 +58,12 @@ import {
   collectFeeInstruction,
   swapInstruction,
   swapRouterBaseInInstruction,
+  createAmmConfigInstruction,
 } from "./";
 
 import { AmmPool, CacheDataProviderImpl } from "../pool";
+import { Context } from "../base";
+import Decimal from "decimal.js";
 
 const defaultSlippage = 0.5; // 0.5%
 
@@ -88,6 +87,90 @@ export type SwapAccounts = {
   outputTokenAccount: PublicKey;
 };
 
+export async function createAmmConfig(
+  ctx: Context,
+  owner: PublicKey,
+  index: number,
+  tickSpacing: number,
+  globalFeeRate: number,
+  protocolFeeRate: number
+): Promise<[PublicKey, TransactionInstruction]> {
+  const [address, _] = await getAmmConfigAddress(index, ctx.program.programId);
+  console.log("ammconfig address: ", address.toString());
+  return [
+    address,
+    await createAmmConfigInstruction(
+      ctx.program,
+      index,
+      tickSpacing,
+      globalFeeRate,
+      protocolFeeRate,
+      {
+        owner: owner,
+        ammConfig: address,
+        systemProgram: SystemProgram.programId,
+      }
+    ),
+  ];
+}
+
+type CreatePoolAccounts = {
+  poolCreator: PublicKey;
+  ammConfig: PublicKey;
+  tokenMint0: PublicKey;
+  tokenMint1: PublicKey;
+};
+
+export async function createPool(
+  ctx: Context,
+  accounts: CreatePoolAccounts,
+  initialPrice: Decimal
+): Promise<[PublicKey, TransactionInstruction[]]> {
+  if (accounts.tokenMint0 >= accounts.tokenMint1) {
+    let tmp = accounts.tokenMint0;
+    accounts.tokenMint0 = accounts.tokenMint1;
+    accounts.tokenMint1 = tmp;
+  }
+  const [poolAddres, _bump1] = await getPoolAddress(
+    accounts.ammConfig,
+    accounts.tokenMint0,
+    accounts.tokenMint1,
+    ctx.program.programId
+  );
+  const [vault0, _bump2] = await getPoolVaultAddress(
+    poolAddres,
+    accounts.tokenMint0,
+    ctx.program.programId
+  );
+  const [vault1, _bump3] = await getPoolVaultAddress(
+    poolAddres,
+    accounts.tokenMint1,
+    ctx.program.programId
+  );
+
+  const [observation, _bump4] = await getObservationAddress(
+    poolAddres,
+    ctx.program.programId
+  );
+
+  const initialPriceX64 = SqrtPriceMath.priceToSqrtPriceX64(initialPrice);
+  const ix = await createPoolInstruction(ctx.program, initialPriceX64, {
+    poolCreator: accounts.poolCreator,
+    ammConfig: accounts.ammConfig,
+    tokenMint0: accounts.tokenMint0,
+    tokenMint1: accounts.tokenMint1,
+    poolState: poolAddres,
+    observationState: observation,
+    tokenVault0: vault0,
+    tokenVault1: vault1,
+    systemProgram: SystemProgram.programId,
+    rent: SYSVAR_RENT_PUBKEY,
+    tokenProgram: TOKEN_PROGRAM_ID,
+  });
+
+  return [poolAddres, [ix]];
+}
+
 export async function openPosition(
   accounts: OpenPositionAccounts,
   ammPool: AmmPool,
@@ -97,25 +180,11 @@ export async function openPosition(
   token1Amount: BN,
   token0AmountSlippage?: number,
   token1AmountSlippage?: number
-): Promise<TransactionInstruction> {
+): Promise<[PublicKey, TransactionInstruction]> {
   const poolState = ammPool.poolState;
   const ctx = ammPool.ctx;
   // const priceLower = SqrtPriceMath.getSqrtPriceX64FromTick(tickLowerIndex);
   // const priceUpper = SqrtPriceMath.getSqrtPriceX64FromTick(tickUpperIndex);
-  const wordPosLowerIndex = tickPosition(
-    tickLowerIndex / poolState.tickSpacing
-  ).wordPos;
-  const wordPosUpperIndex = tickPosition(
-    tickUpperIndex / poolState.tickSpacing
-  ).wordPos;
-
-  // const expectLiquity = LiquidityMath.maxLiquidityFromTokenAmounts(
-  //   poolState.sqrtPriceX64,
-  //   priceLower,
-  //   priceUpper,
-  //   token0Amount,
-  //   token1Amount
-  // );
 
   let amount0Min: BN = new BN(0);
   let amount1Min: BN = new BN(0);
@@ -126,53 +195,28 @@ export async function openPosition(
     amount1Min = token1Amount.muln(1 - token1AmountSlippage);
   }
 
-  // prepare tick and bitmap accounts
-  const [tickLower] = await getTickAddress(
+  // prepare tickArray
+  const tickArrayLowerStartIndex = getArrayStartIndex(
+    tickLowerIndex,
+    ammPool.poolState.tickSpacing
+  );
+  const [tickArrayLower] = await getTickArrayAddress(
     ammPool.address,
     ctx.program.programId,
-    tickLowerIndex
+    tickArrayLowerStartIndex
   );
-  const [tickBitmapLower] = await getTickBitmapAddress(
+  console.log("openPosition tickArrayLowerStartIndex: ", tickArrayLowerStartIndex,"tickArrayLower:",tickArrayLower.toString());
+
+  const tickArrayUpperStartIndex = getArrayStartIndex(
+    tickUpperIndex,
+    ammPool.poolState.tickSpacing
+  );
+  const [tickArrayUpper] = await getTickArrayAddress(
     ammPool.address,
     ctx.program.programId,
-    wordPosLowerIndex
+    tickArrayUpperStartIndex
   );
-  const [tickUpper] = await getTickAddress(
-    ammPool.address,
-    ctx.program.programId,
-    tickUpperIndex
-  );
-  const [tickBitmapUpper] = await getTickBitmapAddress(
-    ammPool.address,
-    ctx.program.programId,
-    wordPosUpperIndex
-  );
-
-  // prepare observation accounts
-  const lastObservation = (
-    await getObservationAddress(
-      ammPool.address,
-      ctx.program.programId,
-      poolState.observationIndex
-    )
-  )[0];
-  let nextObservation = lastObservation;
-
-  const { blockTimestamp: lastBlockTime } =
-    await ammPool.stateFetcher.getObservationState(lastObservation);
-
-  const slot = await ctx.provider.connection.getSlot();
-  const blockTimestamp = await ctx.provider.connection.getBlockTime(slot);
-
-  if (Math.floor(lastBlockTime / 14) > Math.floor(blockTimestamp / 14)) {
-    nextObservation = (
-      await getObservationAddress(
-        ammPool.address,
-        ctx.program.programId,
-        (poolState.observationIndex + 1) % poolState.observationCardinalityNext
-      )
-    )[0];
-  }
+  console.log("openPosition tickArrayUpperStartIndex: ", tickArrayUpperStartIndex,"tickArrayLower:",tickArrayUpper.toString());
 
   const positionANftAccount = await Token.getAssociatedTokenAddress(
     ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -197,45 +241,44 @@ export async function openPosition(
     tickUpperIndex
   );
 
-  return await openPositionInstruction(
-    ctx.program,
-    {
-      tickLowerIndex,
-      tickUpperIndex,
-      wordLowerIndex: wordPosLowerIndex,
-      wordUpperIndex: wordPosUpperIndex,
-      amount0Desired: token0Amount,
-      amount1Desired: token1Amount,
-      amount0Min,
-      amount1Min,
-    },
-    {
-      payer: accounts.payer,
-      positionNftOwner: accounts.positionNftOwner,
-      ammConfig: poolState.ammConfig,
-      positionNftMint: accounts.positionNftMint,
-      positionNftAccount: positionANftAccount,
-      metadataAccount,
-      poolState: ammPool.address,
-      protocolPosition,
-      tickLower,
-      tickUpper,
-      tickBitmapLower,
-      tickBitmapUpper,
-      tokenAccount0: accounts.token0Account,
-      tokenAccount1: accounts.token1Account,
-      tokenVault0: poolState.tokenVault0,
-      tokenVault1: poolState.tokenVault1,
-      lastObservation,
-      nextObservation,
-      personalPosition,
-      systemProgram: SystemProgram.programId,
-      rent: SYSVAR_RENT_PUBKEY,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      metadataProgram: programs.metadata.MetadataProgram.PUBKEY,
-    }
-  );
+  return [
+    personalPosition,
+    await openPositionInstruction(
+      ctx.program,
+      {
+        tickLowerIndex,
+        tickUpperIndex,
+        tickArrayLowerStartIndex: tickArrayLowerStartIndex,
+        tickArrayUpperStartIndex: tickArrayUpperStartIndex,
+        amount0Desired: token0Amount,
+        amount1Desired: token1Amount,
+        amount0Min,
+        amount1Min,
+      },
+      {
+        payer: accounts.payer,
+        positionNftOwner: accounts.positionNftOwner,
+        ammConfig: poolState.ammConfig,
+        positionNftMint: accounts.positionNftMint,
+        positionNftAccount: positionANftAccount,
+        metadataAccount,
+        poolState: ammPool.address,
+        protocolPosition,
+        tickArrayLower,
+        tickArrayUpper,
+        tokenAccount0: accounts.token0Account,
+        tokenAccount1: accounts.token1Account,
+        tokenVault0: poolState.tokenVault0,
+        tokenVault1: poolState.tokenVault1,
+        personalPosition,
+        systemProgram: SystemProgram.programId,
+        rent: SYSVAR_RENT_PUBKEY,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        metadataProgram: programs.metadata.MetadataProgram.PUBKEY,
+      }
+    ),
+  ];
 }
 
 export async function increaseLiquidity(
@@ -249,14 +292,8 @@ export async function increaseLiquidity(
 ): Promise<TransactionInstruction> {
   const poolState = ammPool.poolState;
   const ctx = ammPool.ctx;
-  const tickLowerIndex = positionState.tickLower;
-  const tickUpperIndex = positionState.tickUpper;
-  const wordPosLowerIndex = tickPosition(
-    tickLowerIndex / poolState.tickSpacing
-  ).wordPos;
-  const wordPosUpperIndex = tickPosition(
-    tickUpperIndex / poolState.tickSpacing
-  ).wordPos;
+  const tickLowerIndex = positionState.tickLowerIndex;
+  const tickUpperIndex = positionState.tickUpperIndex;
 
   let amount0Min: BN = new BN(0);
   let amount1Min: BN = new BN(0);
@@ -267,53 +304,25 @@ export async function increaseLiquidity(
     amount1Min = token1Amount.muln(1 - token1AmountSlippage);
   }
 
-  // prepare tick and bitmap accounts
-  const [tickLower] = await getTickAddress(
+  // prepare tickArray
+  const tickArrayLowerStartIndex = getArrayStartIndex(
+    tickLowerIndex,
+    ammPool.poolState.tickSpacing
+  );
+  const [tickArrayLower] = await getTickArrayAddress(
     ammPool.address,
     ctx.program.programId,
-    tickLowerIndex
+    tickArrayLowerStartIndex
   );
-  const [tickBitmapLower] = await getTickBitmapAddress(
+  const tickArrayUpperStartIndex = getArrayStartIndex(
+    tickUpperIndex,
+    ammPool.poolState.tickSpacing
+  );
+  const [tickArrayUpper] = await getTickArrayAddress(
     ammPool.address,
     ctx.program.programId,
-    wordPosLowerIndex
+    tickArrayUpperStartIndex
   );
-  const [tickUpper] = await getTickAddress(
-    ammPool.address,
-    ctx.program.programId,
-    tickUpperIndex
-  );
-  const [tickBitmapUpper] = await getTickBitmapAddress(
-    ammPool.address,
-    ctx.program.programId,
-    wordPosUpperIndex
-  );
-
-  // prepare observation accounts
-  const lastObservation = (
-    await getObservationAddress(
-      ammPool.address,
-      ctx.program.programId,
-      poolState.observationIndex
-    )
-  )[0];
-  let nextObservation = lastObservation;
-
-  const { blockTimestamp: lastBlockTime } =
-    await ammPool.stateFetcher.getObservationState(lastObservation);
-
-  const slot = await ctx.provider.connection.getSlot();
-  const blockTimestamp = await ctx.provider.connection.getBlockTime(slot);
-
-  if (Math.floor(lastBlockTime / 14) > Math.floor(blockTimestamp / 14)) {
-    nextObservation = (
-      await getObservationAddress(
-        ammPool.address,
-        ctx.program.programId,
-        (poolState.observationIndex + 1) % poolState.observationCardinalityNext
-      )
-    )[0];
-  }
 
   const positionANftAccount = await Token.getAssociatedTokenAddress(
     ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -348,16 +357,12 @@ export async function increaseLiquidity(
       nftAccount: positionANftAccount,
       poolState: ammPool.address,
       protocolPosition,
-      tickLower,
-      tickUpper,
-      tickBitmapLower,
-      tickBitmapUpper,
+      tickArrayLower,
+      tickArrayUpper,
       tokenAccount0: accounts.token0Account,
       tokenAccount1: accounts.token1Account,
       tokenVault0: poolState.tokenVault0,
       tokenVault1: poolState.tokenVault1,
-      lastObservation,
-      nextObservation,
       personalPosition,
       tokenProgram: TOKEN_PROGRAM_ID,
     }
@@ -374,19 +379,12 @@ export async function decreaseLiquidity(
 ): Promise<TransactionInstruction> {
   const poolState = ammPool.poolState;
   const ctx = ammPool.ctx;
-  const tickLowerIndex = positionState.tickLower;
-  const tickUpperIndex = positionState.tickUpper;
+  const tickLowerIndex = positionState.tickLowerIndex;
+  const tickUpperIndex = positionState.tickUpperIndex;
   const sqrtPriceLowerX64 =
     SqrtPriceMath.getSqrtPriceX64FromTick(tickLowerIndex);
   const sqrtPriceUpperX64 =
     SqrtPriceMath.getSqrtPriceX64FromTick(tickUpperIndex);
-
-  const wordPosLowerIndex = tickPosition(
-    tickLowerIndex / poolState.tickSpacing
-  ).wordPos;
-  const wordPosUpperIndex = tickPosition(
-    tickUpperIndex / poolState.tickSpacing
-  ).wordPos;
 
   const token0Amount = LiquidityMath.getToken0AmountForLiquidity(
     sqrtPriceLowerX64,
@@ -408,51 +406,25 @@ export async function decreaseLiquidity(
   if (token1AmountSlippage !== undefined) {
     amount1Min = token1Amount.muln(1 - token1AmountSlippage);
   }
-
-  // prepare tick and bitmap accounts
-  const [tickLower] = await getTickAddress(
+  // prepare tickArray
+  const tickArrayLowerStartIndex = getArrayStartIndex(
+    tickLowerIndex,
+    ammPool.poolState.tickSpacing
+  );
+  const [tickArrayLower] = await getTickArrayAddress(
     ammPool.address,
     ctx.program.programId,
-    tickLowerIndex
+    tickArrayLowerStartIndex
   );
-  const [tickBitmapLower] = await getTickBitmapAddress(
+  const tickArrayUpperStartIndex = getArrayStartIndex(
+    tickUpperIndex,
+    ammPool.poolState.tickSpacing
+  );
+  const [tickArrayUpper] = await getTickArrayAddress(
     ammPool.address,
     ctx.program.programId,
-    wordPosLowerIndex
+    tickArrayUpperStartIndex
   );
-  const [tickUpper] = await getTickAddress(
-    ammPool.address,
-    ctx.program.programId,
-    tickUpperIndex
-  );
-  const [tickBitmapUpper] = await getTickBitmapAddress(
-    ammPool.address,
-    ctx.program.programId,
-    wordPosUpperIndex
-  );
-
-  // prepare observation accounts
-  const lastObservation = (
-    await getObservationAddress(
-      ammPool.address,
-      ctx.program.programId,
-      poolState.observationIndex
-    )
-  )[0];
-  let nextObservation = lastObservation;
-  const { blockTimestamp: lastBlockTime } =
-    await ammPool.stateFetcher.getObservationState(lastObservation);
-  const slot = await ctx.provider.connection.getSlot();
-  const blockTimestamp = await ctx.provider.connection.getBlockTime(slot);
-  if (Math.floor(lastBlockTime / 14) > Math.floor(blockTimestamp / 14)) {
-    nextObservation = (
-      await getObservationAddress(
-        ammPool.address,
-        ctx.program.programId,
-        (poolState.observationIndex + 1) % poolState.observationCardinalityNext
-      )
-    )[0];
-  }
 
   const positionANftAccount = await Token.getAssociatedTokenAddress(
     ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -486,16 +458,12 @@ export async function decreaseLiquidity(
       nftAccount: positionANftAccount,
       poolState: ammPool.address,
       protocolPosition,
-      tickLower,
-      tickUpper,
-      tickBitmapLower,
-      tickBitmapUpper,
+      tickArrayLower,
+      tickArrayUpper,
       recipientTokenAccount0: accounts.token0Account,
       recipientTokenAccount1: accounts.token1Account,
       tokenVault0: poolState.tokenVault0,
       tokenVault1: poolState.tokenVault1,
-      lastObservation,
-      nextObservation,
       personalPosition,
       tokenProgram: TOKEN_PROGRAM_ID,
     }
@@ -579,7 +547,10 @@ async function swap(
   const ctx = ammPool.ctx;
 
   // prepare observation accounts
-  const [lastObservation, nextObservation] = await getObservation(ammPool);
+  const observation = await getObservationAddress(
+    ammPool.address,
+    ctx.program.programId
+  )[0];
 
   // get vault
   const zeroForOne = isBaseInput
@@ -608,8 +579,7 @@ async function swap(
       outputTokenAccount: accounts.outputTokenAccount,
       inputVault,
       outputVault,
-      lastObservation: lastObservation,
-      nextObservation: nextObservation,
+      observationState: observation,
       remainings: [...remainingAccounts],
       tokenProgram: TOKEN_PROGRAM_ID,
     }
@@ -647,9 +617,11 @@ async function prepareOnePool(
     outputVault = param.ammPool.poolState.tokenVault0;
     outputTokenMint = param.ammPool.poolState.tokenMint0;
   }
-  const [lastObservation, nextObservation] = await getObservation(
-    param.ammPool
-  );
+
+  const observation = await getObservationAddress(
+    param.ammPool.address,
+    param.ammPool.ctx.program.programId
+  )[0];
 
   const [expectedAmountOut, remainingAccounts] =
     await param.ammPool.getOutputAmountAndRemainAccounts(
@@ -662,6 +634,11 @@ async function prepareOnePool(
     outputTokenMint,
     outputTokenAccount: param.outputTokenAccount,
     remains: [
+      {
+        pubkey: param.ammPool.poolState.ammConfig,
+        isSigner: false,
+        isWritable: true,
+      },
       {
         pubkey: param.ammPool.address,
         isSigner: false,
@@ -683,12 +660,7 @@ async function prepareOnePool(
         isWritable: true,
       },
       {
-        pubkey: lastObservation,
-        isSigner: false,
-        isWritable: true,
-      },
-      {
-        pubkey: nextObservation,
+        pubkey: observation,
         isSigner: false,
         isWritable: true,
       },
@@ -735,7 +707,6 @@ export async function swapRouterBaseIn(
     },
     {
       payer,
-      ammConfig,
       inputTokenAccount: firstPoolParam.inputTokenAccount,
       tokenProgram: TOKEN_PROGRAM_ID,
       remainings: remainingAccounts,
@@ -752,40 +723,28 @@ export async function collectFee(
 ): Promise<TransactionInstruction> {
   const poolState = ammPool.poolState;
   const ctx = ammPool.ctx;
-  const tickLowerIndex = positionState.tickLower;
-  const tickUpperIndex = positionState.tickUpper;
+  const tickLowerIndex = positionState.tickLowerIndex;
+  const tickUpperIndex = positionState.tickUpperIndex;
 
-  const wordPosLowerIndex = tickPosition(
-    tickLowerIndex / poolState.tickSpacing
-  ).wordPos;
-  const wordPosUpperIndex = tickPosition(
-    tickUpperIndex / poolState.tickSpacing
-  ).wordPos;
-
-  // prepare tick and bitmap accounts
-  const [tickLower] = await getTickAddress(
+  // prepare tickArray
+  const tickArrayLowerStartIndex = getArrayStartIndex(
+    tickLowerIndex,
+    ammPool.poolState.tickSpacing
+  );
+  const [tickArrayLower] = await getTickArrayAddress(
     ammPool.address,
     ctx.program.programId,
-    tickLowerIndex
+    tickArrayLowerStartIndex
   );
-  const [tickBitmapLower] = await getTickBitmapAddress(
+  const tickArrayUpperStartIndex = getArrayStartIndex(
+    tickUpperIndex,
+    ammPool.poolState.tickSpacing
+  );
+  const [tickArrayUpper] = await getTickArrayAddress(
     ammPool.address,
     ctx.program.programId,
-    wordPosLowerIndex
+    tickArrayUpperStartIndex
   );
-  const [tickUpper] = await getTickAddress(
-    ammPool.address,
-    ctx.program.programId,
-    tickUpperIndex
-  );
-  const [tickBitmapUpper] = await getTickBitmapAddress(
-    ammPool.address,
-    ctx.program.programId,
-    wordPosUpperIndex
-  );
-
-  // prepare observation accounts
-  const [lastObservation, nextObservation] = await getObservation(ammPool);
 
   const positionANftAccount = await Token.getAssociatedTokenAddress(
     ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -818,48 +777,14 @@ export async function collectFee(
       nftAccount: positionANftAccount,
       poolState: ammPool.address,
       protocolPosition,
-      tickLower,
-      tickUpper,
-      tickBitmapLower,
-      tickBitmapUpper,
+      tickArrayLower,
+      tickArrayUpper,
       recipientTokenAccount0: accounts.token0Account,
       recipientTokenAccount1: accounts.token1Account,
       tokenVault0: poolState.tokenVault0,
       tokenVault1: poolState.tokenVault1,
-      lastObservation,
-      nextObservation,
       personalPosition,
       tokenProgram: TOKEN_PROGRAM_ID,
     }
   );
-}
-
-async function getObservation(
-  ammPool: AmmPool
-): Promise<[PublicKey, PublicKey]> {
-  const lastObservation = (
-    await getObservationAddress(
-      ammPool.address,
-      ammPool.ctx.program.programId,
-      ammPool.poolState.observationIndex
-    )
-  )[0];
-  let nextObservation = lastObservation;
-  const { blockTimestamp: lastBlockTime } =
-    await ammPool.stateFetcher.getObservationState(lastObservation);
-  const slot = await ammPool.ctx.provider.connection.getSlot();
-  const blockTimestamp = await ammPool.ctx.provider.connection.getBlockTime(
-    slot
-  );
-  if (Math.floor(lastBlockTime / 14) > Math.floor(blockTimestamp / 14)) {
-    nextObservation = (
-      await getObservationAddress(
-        ammPool.address,
-        ammPool.ctx.program.programId,
-        (ammPool.poolState.observationIndex + 1) %
-          ammPool.poolState.observationCardinalityNext
-      )
-    )[0];
-  }
-  return [lastObservation, nextObservation];
 }

@@ -985,30 +985,6 @@ export type AmmCore = {
       }
     },
     {
-      "name": "observation",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "blockTimestamp",
-            "type": "u32"
-          },
-          {
-            "name": "sqrtPriceX64",
-            "type": "u128"
-          },
-          {
-            "name": "cumulativeTimePriceX64",
-            "type": "u128"
-          },
-          {
-            "name": "padding",
-            "type": "u128"
-          }
-        ]
-      }
-    },
-    {
       "name": "personalPositionState",
       "type": {
         "kind": "struct",
@@ -1245,43 +1221,6 @@ export type AmmCore = {
           }
         ]
       }
-    },
-    {
-      "name": "tickState",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "tick",
-            "type": "i32"
-          },
-          {
-            "name": "liquidityNet",
-            "type": "i128"
-          },
-          {
-            "name": "liquidityGross",
-            "type": "u128"
-          },
-          {
-            "name": "feeGrowthOutside0X64",
-            "type": "u128"
-          },
-          {
-            "name": "feeGrowthOutside1X64",
-            "type": "u128"
-          },
-          {
-            "name": "rewardGrowthsOutside",
-            "type": {
-              "array": [
-                "u128",
-                3
-              ]
-            }
-          }
-        ]
-      }
     }
   ],
   "types": [
@@ -1304,6 +1243,30 @@ export type AmmCore = {
           },
           {
             "name": "emissionsPerSecondX64",
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Observation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "blockTimestamp",
+            "type": "u32"
+          },
+          {
+            "name": "sqrtPriceX64",
+            "type": "u128"
+          },
+          {
+            "name": "cumulativeTimePriceX64",
+            "type": "u128"
+          },
+          {
+            "name": "padding",
             "type": "u128"
           }
         ]
@@ -1373,6 +1336,43 @@ export type AmmCore = {
           {
             "name": "rewardGrowthGlobalX64",
             "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TickState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tick",
+            "type": "i32"
+          },
+          {
+            "name": "liquidityNet",
+            "type": "i128"
+          },
+          {
+            "name": "liquidityGross",
+            "type": "u128"
+          },
+          {
+            "name": "feeGrowthOutside0X64",
+            "type": "u128"
+          },
+          {
+            "name": "feeGrowthOutside1X64",
+            "type": "u128"
+          },
+          {
+            "name": "rewardGrowthsOutside",
+            "type": {
+              "array": [
+                "u128",
+                3
+              ]
+            }
           }
         ]
       }
@@ -2808,30 +2808,6 @@ export const IDL: AmmCore = {
       }
     },
     {
-      "name": "observation",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "blockTimestamp",
-            "type": "u32"
-          },
-          {
-            "name": "sqrtPriceX64",
-            "type": "u128"
-          },
-          {
-            "name": "cumulativeTimePriceX64",
-            "type": "u128"
-          },
-          {
-            "name": "padding",
-            "type": "u128"
-          }
-        ]
-      }
-    },
-    {
       "name": "personalPositionState",
       "type": {
         "kind": "struct",
@@ -3068,43 +3044,6 @@ export const IDL: AmmCore = {
           }
         ]
       }
-    },
-    {
-      "name": "tickState",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "tick",
-            "type": "i32"
-          },
-          {
-            "name": "liquidityNet",
-            "type": "i128"
-          },
-          {
-            "name": "liquidityGross",
-            "type": "u128"
-          },
-          {
-            "name": "feeGrowthOutside0X64",
-            "type": "u128"
-          },
-          {
-            "name": "feeGrowthOutside1X64",
-            "type": "u128"
-          },
-          {
-            "name": "rewardGrowthsOutside",
-            "type": {
-              "array": [
-                "u128",
-                3
-              ]
-            }
-          }
-        ]
-      }
     }
   ],
   "types": [
@@ -3127,6 +3066,30 @@ export const IDL: AmmCore = {
           },
           {
             "name": "emissionsPerSecondX64",
+            "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Observation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "blockTimestamp",
+            "type": "u32"
+          },
+          {
+            "name": "sqrtPriceX64",
+            "type": "u128"
+          },
+          {
+            "name": "cumulativeTimePriceX64",
+            "type": "u128"
+          },
+          {
+            "name": "padding",
             "type": "u128"
           }
         ]
@@ -3196,6 +3159,43 @@ export const IDL: AmmCore = {
           {
             "name": "rewardGrowthGlobalX64",
             "type": "u128"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TickState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tick",
+            "type": "i32"
+          },
+          {
+            "name": "liquidityNet",
+            "type": "i128"
+          },
+          {
+            "name": "liquidityGross",
+            "type": "u128"
+          },
+          {
+            "name": "feeGrowthOutside0X64",
+            "type": "u128"
+          },
+          {
+            "name": "feeGrowthOutside1X64",
+            "type": "u128"
+          },
+          {
+            "name": "rewardGrowthsOutside",
+            "type": {
+              "array": [
+                "u128",
+                3
+              ]
+            }
           }
         ]
       }

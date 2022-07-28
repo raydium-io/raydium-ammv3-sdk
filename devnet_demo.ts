@@ -177,7 +177,7 @@ describe("test with given pool", async () => {
 
     const cacheDataProvider = new CacheDataProviderImpl(program, poolAState);
     const poolStateAData = await stateFetcher.getPoolState(poolAState);
-    await cacheDataProvider.loadTickAndBitmapCache(
+    await cacheDataProvider.loadTickArrayCache(
       poolStateAData.tick,
       poolStateAData.tickSpacing
     );
@@ -216,7 +216,7 @@ describe("test with given pool", async () => {
     it("open personal position", async () => {
       const cacheDataProvider = new CacheDataProviderImpl(program, poolAState);
       const poolStateAData = await stateFetcher.getPoolState(poolAState);
-      cacheDataProvider.loadTickAndBitmapCache(
+      cacheDataProvider.loadTickArrayCache(
         poolStateAData.tick,
         poolStateAData.tickSpacing
       );
@@ -263,7 +263,7 @@ describe("test with given pool", async () => {
 
   describe("#increase_liquidity", () => {
     it("Add token to the position", async () => {
-      const personalPositionData = await stateFetcher.getPositionState(
+      const personalPositionData = await stateFetcher.getPersonalPositionState(
         personalPositionAState
       );
 
@@ -291,7 +291,7 @@ describe("test with given pool", async () => {
 
   describe("#decrease_liquidity", () => {
     it("burn liquidity as owner", async () => {
-      const personalPositionData = await stateFetcher.getPositionState(
+      const personalPositionData = await stateFetcher.getPersonalPositionState(
         personalPositionAState
       );
 
@@ -397,7 +397,7 @@ describe("test with given pool", async () => {
     it("open second pool position", async () => {
       const cacheDataProvider = new CacheDataProviderImpl(program, poolBState);
       const poolStateAData = await stateFetcher.getPoolState(poolBState);
-      cacheDataProvider.loadTickAndBitmapCache(
+      cacheDataProvider.loadTickArrayCache(
         poolStateAData.tick,
         poolStateAData.tickSpacing
       );
@@ -476,7 +476,7 @@ describe("test with given pool", async () => {
       const amount0Max = new BN(10);
       const amount1Max = new BN(10);
 
-      const personalPositionData = await stateFetcher.getPositionState(
+      const personalPositionData = await stateFetcher.getPersonalPositionState(
         personalPositionAState
       );
       const ix = await collectFee(

@@ -62,7 +62,6 @@ export abstract class SwapMath {
     tickCurrent: number;
     accounts: AccountMeta[];
   } {
-
     if (amountSpecified.eq(ZERO)) {
       throw new Error("amountSpecified must not be 0");
     }
@@ -100,7 +99,7 @@ export abstract class SwapMath {
       liquidity: liquidity,
     };
 
-    let lastSavedWordPos: number | undefined;
+    let lastSavedTickArrayStartIndex: number | undefined;
 
     let loopCount = 0;
     // loop across ticks until input liquidity is consumed, or the limit price is reached
@@ -118,24 +117,23 @@ export abstract class SwapMath {
       step.sqrtPriceStartX64 = state.sqrtPriceX64;
 
       // save the bitmap, and the tick account if it is initialized
-      const nextInitTick = cacheDataProvider.nextInitializedTickWithinOneWord(
-        state.tick,
-        zeroForOne,
-        tickSpacing
-      );
+      const [nextInitTick, tickArrayAddress, tickAarrayStartIndex] =
+        cacheDataProvider.nextInitializedTick(
+          state.tick,
+          tickSpacing,
+          zeroForOne
+        );
 
-      step.tickNext = nextInitTick[0];
-      step.initialized = nextInitTick[1];
-      const wordPos = nextInitTick[2];
-      const bitmapAddress = nextInitTick[4];
+      step.tickNext = nextInitTick.tick;
+      step.initialized = nextInitTick.liquidityGross.gtn(0);
 
-      if (lastSavedWordPos !== wordPos) {
+      if (lastSavedTickArrayStartIndex !== tickAarrayStartIndex) {
         state.accounts.push({
-          pubkey: bitmapAddress,
-          isWritable: false,
+          pubkey: tickArrayAddress,
+          isWritable: true,
           isSigner: false,
         });
-        lastSavedWordPos = wordPos;
+        lastSavedTickArrayStartIndex = tickAarrayStartIndex;
       }
 
       if (step.tickNext < MIN_TICK) {
@@ -149,13 +147,13 @@ export abstract class SwapMath {
       );
 
       let targetPrice: BN;
-      let ss:boolean
+      let ss: boolean;
       if (
         (zeroForOne && step.sqrtPriceNextX64 < sqrtPriceLimitX64) ||
         (!zeroForOne && step.sqrtPriceNextX64 > sqrtPriceLimitX64)
       ) {
         targetPrice = sqrtPriceLimitX64;
-        ss = true
+        ss = true;
       } else {
         targetPrice = step.sqrtPriceNextX64;
       }
@@ -187,17 +185,7 @@ export abstract class SwapMath {
       if (state.sqrtPriceX64.eq(step.sqrtPriceNextX64)) {
         // if the tick is initialized, run the tick transition
         if (step.initialized) {
-          const tickNext = cacheDataProvider.getTickLiquidityNet(step.tickNext);
-          // push the crossed tick to accounts array
-          state.accounts.push({
-            pubkey: tickNext.address,
-            isWritable: true,
-            isSigner: false,
-          });
-          // get the liquidity at this tick
-          let liquidityNet = tickNext.liquidityNet;
-          // if we're moving leftward, we interpret liquidityNet as the opposite sign
-          // safe because liquidityNet cannot be type(int128).min
+          let liquidityNet = nextInitTick.liquidityNet;
           if (zeroForOne) liquidityNet = liquidityNet.mul(NEGATIVE_ONE);
 
           state.liquidity = LiquidityMath.addDelta(
@@ -207,7 +195,6 @@ export abstract class SwapMath {
         }
         state.tick = zeroForOne ? step.tickNext - 1 : step.tickNext;
       } else if (state.sqrtPriceX64 != step.sqrtPriceStartX64) {
-        // recompute unless we're on a lower tick boundary (i.e. already transitioned ticks), and haven't moved
         state.tick = SqrtPriceMath.getTickFromSqrtPriceX64(state.sqrtPriceX64);
       }
 
@@ -264,7 +251,6 @@ export abstract class SwapMath {
           zeroForOne
         );
       }
-
     } else {
       swapStep.amountOut = zeroForOne
         ? LiquidityMath.getToken1AmountForLiquidity(
@@ -289,7 +275,6 @@ export abstract class SwapMath {
           zeroForOne
         );
       }
-
     }
 
     const reachTargetPrice = sqrtPriceX64Target.eq(swapStep.sqrtPriceX64Next);

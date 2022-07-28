@@ -1,6 +1,4 @@
 
-export * from "./bitmap";
+export * from "./tickArray";
 export * from "./fee";
-export * from "./tokenAmount";
-export * from "./tick";
 export * from "./cacheProvider"

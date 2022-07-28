@@ -9,14 +9,10 @@ export type DecreaseLiquidityAccounts = {
   poolState: PublicKey;
   protocolPosition: PublicKey;
   personalPosition: PublicKey;
-  tickLower: PublicKey;
-  tickUpper: PublicKey;
-  tickBitmapLower: PublicKey;
-  tickBitmapUpper: PublicKey;
+  tickArrayLower: PublicKey;
+  tickArrayUpper: PublicKey;
   tokenVault0: PublicKey;
   tokenVault1: PublicKey;
-  lastObservation: PublicKey;
-  nextObservation: PublicKey;
   tokenProgram: PublicKey;
   recipientTokenAccount0: PublicKey;
   recipientTokenAccount1: PublicKey;

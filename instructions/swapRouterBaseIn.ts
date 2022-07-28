@@ -8,7 +8,6 @@ import { AmmCore } from "../anchor/amm_core";
 
 type SwapRouterBaseInAccounts = {
   payer: PublicKey;
-  ammConfig: PublicKey;
   inputTokenAccount: PublicKey;
   tokenProgram: PublicKey;
   remainings: AccountMeta[];
@@ -27,13 +26,12 @@ export function swapRouterBaseInInstruction(
 ): Promise<TransactionInstruction> {
   const { amountIn, amountOutMinimum, additionalAccountsPerPool } = args;
 
-  const { payer, ammConfig, inputTokenAccount, tokenProgram } = accounts;
+  const { payer, inputTokenAccount, tokenProgram } = accounts;
 
   return program.methods
     .swapRouterBaseIn(amountIn, amountOutMinimum, additionalAccountsPerPool)
     .accounts({
       payer,
-      ammConfig,
       inputTokenAccount,
       tokenProgram,
     })

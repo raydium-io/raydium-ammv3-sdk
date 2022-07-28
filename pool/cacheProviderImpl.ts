@@ -1,28 +1,26 @@
 import * as anchor from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { BN } from "@project-serum/anchor";
-import {
-  tickPosition,
-  buildTick,
-  nextInitializedBit,
-  generateBitmapWord,
-} from "../entities";
 
-import { BITMAP_SEED, TICK_SEED, u32ToBytes, u16ToBytes } from "../utils";
 import { MAX_TICK, MIN_TICK } from "../math";
 import { CacheDataProvider } from "../entities/cacheProvider";
-import { getTickAddress, getTickBitmapAddress } from "../utils";
-interface TickBitmap {
-  word: BN[];
-}
+import { getTickArrayAddress } from "../utils";
+import {
+  TICK_ARRAY_SIZE,
+  Tick,
+  TickArray,
+  getArrayStartIndex,
+  getNextTickArrayStartIndex,
+} from "../entities";
 
-interface Tick {
-  tick: number;
-  liquidityNet: BN;
-  secondsPerLiquidityOutsideX64: BN,
-}
+// interface Tick {
+//   tick: number;
+//   liquidityNet: BN;
+//   liquidityGross: BN;
+//   secondsPerLiquidityOutsideX64: BN;
+// }
 
-const FETCH_BITMAP_COUNT = 15;
+const FETCH_TICKARRAY_COUNT = 15;
 
 export declare type PoolVars = {
   key: PublicKey;
@@ -31,35 +29,24 @@ export declare type PoolVars = {
   fee: number;
 };
 
+// export declare type TickArray = {
+//   address: PublicKey;
+//   startIndex: BN;
+//   ticks: Tick[];
+// };
+
 export class CacheDataProviderImpl implements CacheDataProvider {
   // @ts-ignore
   program: anchor.Program<AmmCore>;
   poolAddress: PublicKey;
 
-  bitmapCache: Map<
-    number,
-    | {
-        address: PublicKey;
-        word: anchor.BN;
-      }
-    | undefined
-  >;
-
-  tickCache: Map<
-    number,
-    | {
-        address: PublicKey;
-        liquidityNet: BN;
-      }
-    | undefined
-  >;
+  tickArrayCache: Map<number, TickArray | undefined>;
 
   // @ts-ignore
   constructor(program: anchor.Program<AmmCore>, poolAddress: PublicKey) {
     this.program = program;
     this.poolAddress = poolAddress;
-    this.bitmapCache = new Map();
-    this.tickCache = new Map();
+    this.tickArrayCache = new Map();
   }
 
   /**
@@ -67,130 +54,213 @@ export class CacheDataProviderImpl implements CacheDataProvider {
    * @param tickCurrent The current pool tick
    * @param tickSpacing The pool tick spacing
    */
-  async loadTickAndBitmapCache(tickCurrent: number, tickSpacing: number) {
-    const { wordPos } = tickPosition(tickCurrent/tickSpacing);
-
+  async loadTickArrayCache(tickCurrent: number, tickSpacing: number) {
+    const tickArraysToFetch = [];
+    const startIndex = getArrayStartIndex(tickCurrent, tickSpacing);
+    const [tickArrayAddress, _] = await getTickArrayAddress(
+      this.poolAddress,
+      this.program.programId,
+      startIndex
+    );
+    tickArraysToFetch.push(startIndex);
+    console.log(
+      "tickArrayAddress: ",
+      tickArrayAddress.toString(),
+      "startIndex: ",
+      startIndex
+    );
     try {
-      const bitmapsToFetch = [];
-      const { wordPos: WORD_POS_MIN } = tickPosition(Math.floor(MIN_TICK/ tickSpacing));
-      const { wordPos: WORD_POS_MAX } = tickPosition(Math.floor(MAX_TICK/tickSpacing));
-      const minWord = Math.max(wordPos - FETCH_BITMAP_COUNT, WORD_POS_MIN);
-      const maxWord = Math.min(wordPos + FETCH_BITMAP_COUNT, WORD_POS_MAX);
-      for (let i = minWord; i < maxWord; i++) {
-        const [bitmapAddress, _] = await getTickBitmapAddress(
+      const fetchedState = await this.program.account.tickArrayState.fetch(
+        tickArrayAddress
+      );
+      const fetchedTickArray = fetchedState as TickArray;
+      console.log(
+        "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~fetchedState: ",
+        fetchedState,
+        "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~fetchedTickArray: ",
+        fetchedTickArray
+      );
+      this.tickArrayCache.set(fetchedTickArray.startIndex, fetchedTickArray);
+    } catch (error) {
+      console.log(error);
+    }
+    return;
+    try {
+      let lastStartIndex: number = startIndex;
+      for (let i = 0; i < FETCH_TICKARRAY_COUNT / 2; i++) {
+        const nextStartIndex = getNextTickArrayStartIndex(
+          lastStartIndex,
+          tickSpacing,
+          true
+        );
+        const [tickArrayAddress, _] = await getTickArrayAddress(
           this.poolAddress,
           this.program.programId,
-          i
+          nextStartIndex
         );
-        bitmapsToFetch.push(bitmapAddress);
-        // console.log("bitmapAddress: ",bitmapAddress.toString(), "word: ", i);
+        tickArraysToFetch.push(tickArrayAddress);
+        lastStartIndex = nextStartIndex;
+        console.log(
+          "tickArrayAddress: ",
+          tickArrayAddress.toString(),
+          "startIndex: ",
+          nextStartIndex
+        );
       }
-      const fetchedBitmaps =
-        (await this.program.account.tickBitmapState.fetchMultiple(
-          bitmapsToFetch
-        )) as (TickBitmap | null)[];
-      // console.log("fetchedBitmaps: ", fetchedBitmaps);
+      lastStartIndex = startIndex;
+      for (let i = 0; i < FETCH_TICKARRAY_COUNT / 2; i++) {
+        const nextStartIndex = getNextTickArrayStartIndex(
+          lastStartIndex,
+          tickSpacing,
+          false
+        );
+        const [tickArrayAddress, _] = await getTickArrayAddress(
+          this.poolAddress,
+          this.program.programId,
+          nextStartIndex
+        );
+        tickArraysToFetch.push(tickArrayAddress);
+        lastStartIndex = nextStartIndex;
+        console.log(
+          "tickArrayAddress: ",
+          tickArrayAddress.toString(),
+          "startIndex: ",
+          nextStartIndex
+        );
+      }
+      const fetchedTickArrays =
+        (await this.program.account.tickArrayState.fetchMultiple(
+          tickArraysToFetch
+        )) as (TickArray | null)[];
+      console.log("fetchedTickArrays: ", fetchedTickArrays);
 
-      const tickAddresses = [];
-      for (let i = 0; i < maxWord - minWord; i++) {
-        const currentWordPos = i + minWord;
-        const wordArray = fetchedBitmaps[i]?.word;
-        const word = wordArray ? generateBitmapWord(wordArray) : new BN(0);
-        this.bitmapCache.set(currentWordPos, {
-          address: bitmapsToFetch[i],
-          word,
-        });
-        if (word && !word.eqn(0)) {
-          for (let j = 0; j < 256; j++) {
-            if (word.shrn(j).and(new BN(1)).eqn(1)) {
-              const tick = ((currentWordPos << 8) + j) * tickSpacing;
-              const [tickAddress, _] = await getTickAddress(
-                this.poolAddress,
-                this.program.programId,
-                tick
-              );
-              tickAddresses.push(tickAddress);
-            }
-          }
-        }
-      }
+      for (let i = 0; i < FETCH_TICKARRAY_COUNT; i++) {
+        fetchedTickArrays[i];
 
-      const fetchedTicks = (await this.program.account.tickState.fetchMultiple(
-        tickAddresses
-      )) as Tick[];
-      for (const i in tickAddresses) {
-        const { tick, liquidityNet } = fetchedTicks[i];
-        this.tickCache.set(tick, {
-          address: tickAddresses[i],
-          liquidityNet: new BN(liquidityNet),
-        });
+        this.tickArrayCache.set(
+          fetchedTickArrays[i].startIndex,
+          fetchedTickArrays[i]
+        );
       }
-    
     } catch (error) {
       console.log(error);
     }
   }
 
-  getTickLiquidityNet(tick: number): {
-    address: anchor.web3.PublicKey;
-    liquidityNet: BN;
-  } {
-    let savedTick = this.tickCache.get(tick);
-    if (!savedTick) {
-      throw new Error("Tick not cached");
-    }
-
-    return {
-      address: savedTick.address,
-      liquidityNet: savedTick.liquidityNet,
-    };
-  }
-
   /**
    * Fetches the cached bitmap for the word
-   * @param wordPos
+   * @param startIndex
    */
-  getBitmap(wordPos: number): {
-    address: anchor.web3.PublicKey;
-    word: anchor.BN;
-  } {
-    let savedBitmap = this.bitmapCache.get(wordPos);
-    if (!savedBitmap) {
+  getTickArray(startIndex: number): TickArray {
+    let savedTickArray = this.tickArrayCache.get(startIndex);
+    if (!savedTickArray) {
       throw new Error("Bitmap not cached");
     }
-
-    return savedBitmap;
+    return savedTickArray;
   }
 
   /**
    * Finds the next initialized tick in the given word. Fetched bitmaps are saved in a
    * cache for quicker lookups in future.
-   * @param tick The current tick
-   * @param lte Whether to look for a tick less than or equal to the current one, or a tick greater than or equal to
+   * @param tickIndex The current tick
+   * @param zeroForOne Whether to look for a tick less than or equal to the current one, or a tick greater than or equal to
    * @param tickSpacing The tick spacing for the pool
    * @returns
    */
-  nextInitializedTickWithinOneWord(
-    tick: number,
-    lte: boolean,
-    tickSpacing: number
-  ): [number, boolean, number, number, PublicKey] {
-    let compressed = tick / tickSpacing;
-    if (tick < 0 && tick % tickSpacing !== 0) {
-      compressed -= 1;
-    }
-    if (!lte) {
-      compressed += 1;
-    }
-    const { wordPos, bitPos } = tickPosition(compressed);
-    const cachedBitmap = this.getBitmap(wordPos);
-
-    const { next: nextBit, initialized } = nextInitializedBit(
-      cachedBitmap.word,
-      bitPos,
-      lte
+  nextInitializedTick(
+    tickIndex: number,
+    tickSpacing: number,
+    zeroForOne: boolean
+  ): [Tick, PublicKey, number] {
+    let [nextTick, address, startIndex] = this.nextInitializedTickInOneArray(
+      tickIndex,
+      tickSpacing,
+      zeroForOne
     );
-    const nextTick = buildTick(wordPos, nextBit, tickSpacing);
-    return [nextTick, initialized, wordPos, bitPos, cachedBitmap.address];
+    while (nextTick.liquidityGross.lten(0)) {
+      const nextStartIndex = getNextTickArrayStartIndex(
+        startIndex,
+        tickSpacing,
+        zeroForOne
+      );
+      const cachedTickArray = this.getTickArray(nextStartIndex);
+      if (cachedTickArray == undefined) {
+        throw new Error("No invaild tickArray cache");
+      }
+      [nextTick, address, startIndex] = this.firstInitializedTickInOneArray(
+        cachedTickArray,
+        zeroForOne
+      );
+    }
+    return [nextTick, address, startIndex];
+  }
+
+  firstInitializedTickInOneArray(
+    tickArray: TickArray,
+    zeroForOne: boolean
+  ): [Tick, PublicKey, number] {
+    let nextInitializedTick: Tick;
+    if (zeroForOne) {
+      let i = TICK_ARRAY_SIZE - 1;
+      while (i >= 0) {
+        const tickInArray = tickArray.ticks[i];
+        if (tickInArray.liquidityGross.gtn(0)) {
+          nextInitializedTick = tickInArray;
+        }
+        i = i - 1;
+      }
+    } else {
+      let i = 0;
+      while (i < TICK_ARRAY_SIZE) {
+        const tickInArray = tickArray.ticks[i];
+        if (tickInArray.liquidityGross.gtn(0)) {
+          nextInitializedTick = tickInArray;
+        }
+        i = i + 1;
+      }
+    }
+    return [nextInitializedTick, tickArray.address, tickArray.startIndex];
+  }
+
+  /**
+   *
+   * @param tickIndex
+   * @param tickSpacing
+   * @param zeroForOne
+   * @returns
+   */
+  nextInitializedTickInOneArray(
+    tickIndex: number,
+    tickSpacing: number,
+    zeroForOne: boolean
+  ): [Tick, PublicKey, number] {
+    const startIndex = getArrayStartIndex(tickIndex, tickSpacing);
+    let tickPositionInArray = (tickIndex - startIndex) / tickSpacing;
+    const cachedTickArray = this.getTickArray(startIndex);
+    let nextInitializedTick: Tick;
+    if (zeroForOne) {
+      let i = tickPositionInArray;
+      while (i >= 0) {
+        const tickInArray = cachedTickArray.ticks[i];
+        if (tickInArray.liquidityGross.gtn(0)) {
+          nextInitializedTick = tickInArray;
+        }
+        i = i - 1;
+      }
+    } else {
+      let i = 0;
+      while (i < TICK_ARRAY_SIZE) {
+        const tickInArray = cachedTickArray.ticks[i];
+        if (tickInArray.liquidityGross.gtn(0)) {
+          nextInitializedTick = tickInArray;
+        }
+        i = i + 1;
+      }
+    }
+    return [
+      nextInitializedTick,
+      cachedTickArray.address,
+      cachedTickArray.startIndex,
+    ];
   }
 }
