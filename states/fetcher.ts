@@ -21,12 +21,15 @@ export class StateFetcher {
   }
 
   public async getAmmConfig(address: PublicKey): Promise<AmmConfig> {
-    const { bump, owner, protocolFeeRate } =
+    const { bump, index, owner, protocolFeeRate, tradeFeeRate, tickSpacing } =
       await this.program.account.ammConfig.fetch(address);
     return {
       bump,
+      index,
       owner,
       protocolFeeRate,
+      tradeFeeRate,
+      tickSpacing,
     };
   }
 
@@ -101,7 +104,9 @@ export class StateFetcher {
     };
   }
 
-  public async getPersonalPositionState(address: PublicKey): Promise<PositionState> {
+  public async getPersonalPositionState(
+    address: PublicKey
+  ): Promise<PositionState> {
     const {
       bump,
       nftMint,

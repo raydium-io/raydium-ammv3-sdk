@@ -10,8 +10,8 @@ export declare type Tick = {
 };
 
 export declare type TickArray = {
-  address: PublicKey;
-  startIndex: number;
+  ammPool: PublicKey;
+  startTickIndex: number;
   ticks: Tick[];
 };
 
@@ -25,13 +25,12 @@ export function getArrayStartIndex(
   tickIndex: number,
   tickSpacing: number
 ): number {
-  let startIndex :number;
+  let startIndex: number;
   if (tickIndex < 0) {
-    startIndex =  Math.ceil(tickIndex / (TICK_ARRAY_SIZE * tickSpacing));
-    console.log("tickIndex: ",tickIndex)
+    startIndex = Math.ceil(tickIndex / (TICK_ARRAY_SIZE * tickSpacing));
     startIndex = startIndex - 1;
-  }else{
-    startIndex =  Math.floor(tickIndex / (TICK_ARRAY_SIZE * tickSpacing));
+  } else {
+    startIndex = Math.floor(tickIndex / (TICK_ARRAY_SIZE * tickSpacing));
   }
   return startIndex * (tickSpacing * TICK_ARRAY_SIZE);
 }

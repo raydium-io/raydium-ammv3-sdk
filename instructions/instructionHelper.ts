@@ -96,7 +96,6 @@ export async function createAmmConfig(
   protocolFeeRate: number
 ): Promise<[PublicKey, TransactionInstruction]> {
   const [address, _] = await getAmmConfigAddress(index, ctx.program.programId);
-  console.log("ammconfig address: ", address.toString());
   return [
     address,
     await createAmmConfigInstruction(
@@ -119,13 +118,14 @@ type CreatePoolAccounts = {
   ammConfig: PublicKey;
   tokenMint0: PublicKey;
   tokenMint1: PublicKey;
+  observation: PublicKey;
 };
 
 export async function createPool(
   ctx: Context,
   accounts: CreatePoolAccounts,
   initialPrice: Decimal
-): Promise<[PublicKey, TransactionInstruction[]]> {
+): Promise<[PublicKey, TransactionInstruction]> {
   if (accounts.tokenMint0 >= accounts.tokenMint1) {
     let tmp = accounts.tokenMint0;
     accounts.tokenMint0 = accounts.tokenMint1;
@@ -148,27 +148,56 @@ export async function createPool(
     ctx.program.programId
   );
 
-  const [observation, _bump4] = await getObservationAddress(
-    poolAddres,
-    ctx.program.programId
-  );
+  // const [observation, _bump4] = await getObservationAddress(
+  //   poolAddres,
+  //   ctx.program.programId
+  // );
 
   const initialPriceX64 = SqrtPriceMath.priceToSqrtPriceX64(initialPrice);
-  const ix = await createPoolInstruction(ctx.program, initialPriceX64, {
-    poolCreator: accounts.poolCreator,
-    ammConfig: accounts.ammConfig,
-    tokenMint0: accounts.tokenMint0,
-    tokenMint1: accounts.tokenMint1,
-    poolState: poolAddres,
-    observationState: observation,
-    tokenVault0: vault0,
-    tokenVault1: vault1,
-    systemProgram: SystemProgram.programId,
-    rent: SYSVAR_RENT_PUBKEY,
-    tokenProgram: TOKEN_PROGRAM_ID,
-  });
+  const creatPoolIx = await createPoolInstruction(
+    ctx.program,
+    initialPriceX64,
+    {
+      poolCreator: accounts.poolCreator,
+      ammConfig: accounts.ammConfig,
+      tokenMint0: accounts.tokenMint0,
+      tokenMint1: accounts.tokenMint1,
+      poolState: poolAddres,
+      observationState: accounts.observation,
+      tokenVault0: vault0,
+      tokenVault1: vault1,
+      systemProgram: SystemProgram.programId,
+      rent: SYSVAR_RENT_PUBKEY,
+      tokenProgram: TOKEN_PROGRAM_ID,
+    }
+  );
 
-  return [poolAddres, [ix]];
+  return [poolAddres, creatPoolIx];
+}
+
+export async function openPositionWithPrice(
+  accounts: OpenPositionAccounts,
+  ammPool: AmmPool,
+  priceLower: Decimal,
+  priceUpper: Decimal,
+  token0Amount: BN,
+  token1Amount: BN,
+  token0AmountSlippage?: number,
+  token1AmountSlippage?: number
+): Promise<[PublicKey, TransactionInstruction]> {
+  const tickLower = SqrtPriceMath.getTickFromPrice(priceLower);
+  const tickUpper = SqrtPriceMath.getTickFromPrice(priceUpper);
+
+  return openPosition(
+    accounts,
+    ammPool,
+    tickLower,
+    tickUpper,
+    token0Amount,
+    token1Amount,
+    token0AmountSlippage,
+    token1AmountSlippage
+  );
 }
 
 export async function openPosition(
@@ -183,8 +212,6 @@ export async function openPosition(
 ): Promise<[PublicKey, TransactionInstruction]> {
   const poolState = ammPool.poolState;
   const ctx = ammPool.ctx;
-  // const priceLower = SqrtPriceMath.getSqrtPriceX64FromTick(tickLowerIndex);
-  // const priceUpper = SqrtPriceMath.getSqrtPriceX64FromTick(tickUpperIndex);
 
   let amount0Min: BN = new BN(0);
   let amount1Min: BN = new BN(0);
@@ -205,8 +232,6 @@ export async function openPosition(
     ctx.program.programId,
     tickArrayLowerStartIndex
   );
-  console.log("openPosition tickArrayLowerStartIndex: ", tickArrayLowerStartIndex,"tickArrayLower:",tickArrayLower.toString());
-
   const tickArrayUpperStartIndex = getArrayStartIndex(
     tickUpperIndex,
     ammPool.poolState.tickSpacing
@@ -216,8 +241,6 @@ export async function openPosition(
     ctx.program.programId,
     tickArrayUpperStartIndex
   );
-  console.log("openPosition tickArrayUpperStartIndex: ", tickArrayUpperStartIndex,"tickArrayLower:",tickArrayUpper.toString());
-
   const positionANftAccount = await Token.getAssociatedTokenAddress(
     ASSOCIATED_TOKEN_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
@@ -487,7 +510,7 @@ export async function swapBaseIn(
     );
 
   let amountOutMin = new BN(0);
-  if (amountOutSlippage !== undefined) {
+  if (amountOutSlippage != undefined) {
     amountOutMin = expectedAmountOut.muln(1 - amountOutSlippage);
   }
   return swap(
@@ -546,11 +569,15 @@ async function swap(
   const poolState = ammPool.poolState;
   const ctx = ammPool.ctx;
 
-  // prepare observation accounts
-  const observation = await getObservationAddress(
+  const tickArrayStartIndex = getArrayStartIndex(
+    ammPool.poolState.tickCurrent,
+    ammPool.poolState.tickSpacing
+  );
+  const [tickArray] = await getTickArrayAddress(
     ammPool.address,
-    ctx.program.programId
-  )[0];
+    ctx.program.programId,
+    tickArrayStartIndex
+  );
 
   // get vault
   const zeroForOne = isBaseInput
@@ -579,7 +606,8 @@ async function swap(
       outputTokenAccount: accounts.outputTokenAccount,
       inputVault,
       outputVault,
-      observationState: observation,
+      tickArray,
+      observationState: ammPool.poolState.observationKey,
       remainings: [...remainingAccounts],
       tokenProgram: TOKEN_PROGRAM_ID,
     }
@@ -593,7 +621,7 @@ export type RouterPoolParam = {
   outputTokenAccount: PublicKey;
 };
 
-type PrepareOnePoolResut = {
+type PrepareOnePoolResult = {
   amountOut: BN;
   outputTokenMint: PublicKey;
   outputTokenAccount: PublicKey;
@@ -604,7 +632,7 @@ type PrepareOnePoolResut = {
 async function prepareOnePool(
   inputAmount: BN,
   param: RouterPoolParam
-): Promise<PrepareOnePoolResut> {
+): Promise<PrepareOnePoolResult> {
   // get vault
   const zeroForOne = param.inputTokenMint.equals(
     param.ammPool.poolState.tokenMint0
@@ -617,12 +645,6 @@ async function prepareOnePool(
     outputVault = param.ammPool.poolState.tokenVault0;
     outputTokenMint = param.ammPool.poolState.tokenMint0;
   }
-
-  const observation = await getObservationAddress(
-    param.ammPool.address,
-    param.ammPool.ctx.program.programId
-  )[0];
-
   const [expectedAmountOut, remainingAccounts] =
     await param.ammPool.getOutputAmountAndRemainAccounts(
       param.inputTokenMint,
@@ -645,22 +667,22 @@ async function prepareOnePool(
         isWritable: true,
       },
       {
-        pubkey: param.outputTokenAccount, // outputTokenAccount
+        pubkey: param.outputTokenAccount,
         isSigner: false,
         isWritable: true,
       },
       {
-        pubkey: inputVault, // input vault
+        pubkey: inputVault,
         isSigner: false,
         isWritable: true,
       },
       {
-        pubkey: outputVault, // output vault
+        pubkey: outputVault,
         isSigner: false,
         isWritable: true,
       },
       {
-        pubkey: observation,
+        pubkey: param.ammPool.poolState.observationKey,
         isSigner: false,
         isWritable: true,
       },
@@ -672,19 +694,18 @@ async function prepareOnePool(
 
 export async function swapRouterBaseIn(
   payer: PublicKey,
-  amountIn: BN,
-  amountOutMin: BN,
   firstPoolParam: RouterPoolParam,
   remainRouterPools: {
     ammPool: AmmPool;
     // outputTokenMint: PublicKey;
     outputTokenAccount: PublicKey;
-  }[]
+  }[],
+  amountIn: BN,
+  amountOutSlippage?: number
 ): Promise<TransactionInstruction> {
   let additionalAccountsArray: number[] = [];
   let remainingAccounts: AccountMeta[] = [];
 
-  const ammConfig = firstPoolParam.ammPool.poolState.ammConfig;
   let result = await prepareOnePool(amountIn, firstPoolParam);
   for (let i = 0; i < remainRouterPools.length; i++) {
     const param: RouterPoolParam = {
@@ -697,7 +718,10 @@ export async function swapRouterBaseIn(
     additionalAccountsArray.push[result.additionLength];
     remainingAccounts.push(...result.remains);
   }
-
+  let amountOutMin = new BN(0);
+  if (amountOutSlippage != undefined) {
+    amountOutMin = amountOutMin.muln(1 - amountOutSlippage);
+  }
   return await swapRouterBaseInInstruction(
     firstPoolParam.ammPool.ctx.program,
     {

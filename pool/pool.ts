@@ -1,7 +1,7 @@
 import { Token } from "@raydium-io/raydium-sdk";
 import { BN } from "@project-serum/anchor";
 import { AccountMeta, PublicKey } from "@solana/web3.js";
-import { PoolState, StateFetcher } from "../states";
+import { AmmConfig, PoolState, StateFetcher } from "../states";
 import { Context } from "../base";
 import { NEGATIVE_ONE, SwapMath, Math } from "../math";
 import { CacheDataProviderImpl } from "./cacheProviderImpl";
@@ -14,7 +14,7 @@ export class AmmPool {
   public readonly cacheDataProvider: CacheDataProviderImpl;
   public readonly stateFetcher: StateFetcher;
   public poolState: PoolState;
-
+  public ammConfig: AmmConfig;
   /**
    *
    * @param ctx
@@ -27,6 +27,7 @@ export class AmmPool {
     ctx: Context,
     address: PublicKey,
     poolState: PoolState,
+    ammConfig: AmmConfig,
     stateFetcher: StateFetcher,
     cacheDataProvider: CacheDataProviderImpl
   ) {
@@ -34,9 +35,8 @@ export class AmmPool {
     this.ctx = ctx;
     this.stateFetcher = stateFetcher;
     this.cacheDataProvider = cacheDataProvider;
-    if (poolState) {
-      this.poolState = poolState;
-    }
+    this.poolState = poolState;
+    this.ammConfig = ammConfig;
   }
 
   public async reload(readLoadCache?: boolean): Promise<PoolState> {
@@ -96,9 +96,9 @@ export class AmmPool {
     } = SwapMath.swapCompute(
       this.cacheDataProvider,
       zeroForOne,
-      this.poolState.feeRate,
+      this.ammConfig.tradeFeeRate,
       this.poolState.liquidity,
-      this.poolState.tick,
+      this.poolState.tickCurrent,
       this.poolState.tickSpacing,
       this.poolState.sqrtPriceX64,
       inputAmount,
@@ -106,7 +106,7 @@ export class AmmPool {
     );
 
     this.poolState.sqrtPriceX64 = updatedSqrtPriceX64;
-    this.poolState.tick = updatedTick;
+    this.poolState.tickCurrent = updatedTick;
     this.poolState.liquidity = updatedLiquidity;
     return [outputAmount.mul(NEGATIVE_ONE), accounts];
   }
@@ -142,16 +142,16 @@ export class AmmPool {
     } = SwapMath.swapCompute(
       this.cacheDataProvider,
       zeroForOne,
-      this.poolState.feeRate,
+      this.ammConfig.tradeFeeRate,
       this.poolState.liquidity,
-      this.poolState.tick,
+      this.poolState.tickCurrent,
       this.poolState.tickSpacing,
       this.poolState.sqrtPriceX64,
       outputAmount.mul(NEGATIVE_ONE),
       sqrtPriceLimitX64
     );
     this.poolState.sqrtPriceX64 = updatedSqrtPriceX64;
-    this.poolState.tick = tickCurrent;
+    this.poolState.tickCurrent = tickCurrent;
     this.poolState.liquidity = liquidity;
 
     return [inputAmount, accounts];

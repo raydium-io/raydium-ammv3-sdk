@@ -14,6 +14,7 @@ type SwapAccounts = {
   outputTokenAccount: PublicKey;
   inputVault: PublicKey;
   outputVault: PublicKey;
+  tickArray: PublicKey;
   observationState: PublicKey;
   tokenProgram: PublicKey;
   remainings: AccountMeta[];
@@ -40,6 +41,7 @@ export function swapInstruction(
     outputTokenAccount,
     inputVault,
     outputVault,
+    tickArray,
     observationState,
     tokenProgram,
   } = accounts;
@@ -54,6 +56,7 @@ export function swapInstruction(
       outputTokenAccount,
       inputVault,
       outputVault,
+      tickArray,
       observationState,
       tokenProgram,
     })

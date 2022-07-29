@@ -9,7 +9,7 @@ import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 import { AmmPool, CacheDataProviderImpl } from "./pool";
-import { SqrtPriceMath, LiquidityMath, sqrtPriceX64ToPrice } from "./math";
+import { SqrtPriceMath } from "./math";
 import { StateFetcher } from "./states";
 
 import {
@@ -56,7 +56,7 @@ function localWallet(): Keypair {
 }
 
 describe("test with given pool", async () => {
-  return
+  return;
   console.log(SqrtPriceMath.getSqrtPriceX64FromTick(0).toString());
   console.log(SqrtPriceMath.getSqrtPriceX64FromTick(1).toString());
 
@@ -161,8 +161,7 @@ describe("test with given pool", async () => {
       ammConfig,
       token0.publicKey,
       token1.publicKey,
-      program.programId,
-      100
+      program.programId
     );
     console.log("got poolA address", poolAState.toString());
 
@@ -170,25 +169,9 @@ describe("test with given pool", async () => {
       ammConfig,
       token0.publicKey,
       token2.publicKey,
-      program.programId,
-      2500
+      program.programId
     );
     console.log("got poolB address", poolBState.toString());
-
-    const cacheDataProvider = new CacheDataProviderImpl(program, poolAState);
-    const poolStateAData = await stateFetcher.getPoolState(poolAState);
-    await cacheDataProvider.loadTickArrayCache(
-      poolStateAData.tick,
-      poolStateAData.tickSpacing
-    );
-
-    ammPoolA = new AmmPool(
-      ctx,
-      poolAState,
-      poolStateAData,
-      stateFetcher,
-      cacheDataProvider
-    );
   });
 
   it("find program accounts addresses for position creation", async () => {
@@ -215,9 +198,10 @@ describe("test with given pool", async () => {
   describe("#create_personal_position", () => {
     it("open personal position", async () => {
       const cacheDataProvider = new CacheDataProviderImpl(program, poolAState);
+      const ammConfigData = await stateFetcher.getAmmConfig(ammConfig);
       const poolStateAData = await stateFetcher.getPoolState(poolAState);
-      cacheDataProvider.loadTickArrayCache(
-        poolStateAData.tick,
+      await cacheDataProvider.loadTickArrayCache(
+        poolStateAData.tickCurrent,
         poolStateAData.tickSpacing
       );
 
@@ -225,17 +209,18 @@ describe("test with given pool", async () => {
         ctx,
         poolAState,
         poolStateAData,
+        ammConfigData,
         stateFetcher,
         cacheDataProvider
       );
-      console.log(poolStateAData);
+
       const additionalComputeBudgetInstruction =
         ComputeBudgetProgram.requestUnits({
           units: 400000,
           additionalFee: 0,
         });
 
-      const openIx = await openPosition(
+      const [_, openIx] = await openPosition(
         {
           payer: owner,
           positionNftOwner: owner,
@@ -318,9 +303,11 @@ describe("test with given pool", async () => {
 
   describe("#swap_base_input_single", () => {
     it("zero to one swap with a limit price", async () => {
-      await ammPoolA.reload();
+      await ammPoolA.reload(true);
       const amountIn = new BN(100_000);
-      const sqrtPriceLimitX64 = ammPoolA.poolState.sqrtPriceX64.subn(1000000);
+      const sqrtPriceLimitX64 = ammPoolA.poolState.sqrtPriceX64.sub(
+        new BN(1000000000)
+      );
 
       const ix = await swapBaseIn(
         {
@@ -370,8 +357,7 @@ describe("test with given pool", async () => {
   describe("#swap_base_output_single", () => {
     it("zero for one swap base output", async () => {
       const amountOut = new BN(100_000);
-      await ammPoolA.reload();
-      console.log("pool current tick:", ammPoolA.poolState.tick, "tick_spacing:", ammPoolA.poolState.tickSpacing)
+      await ammPoolA.reload(true);
       const ix = await swapBaseOut(
         {
           payer: owner,
@@ -396,27 +382,25 @@ describe("test with given pool", async () => {
   describe("#swap_router_base_in", () => {
     it("open second pool position", async () => {
       const cacheDataProvider = new CacheDataProviderImpl(program, poolBState);
-      const poolStateAData = await stateFetcher.getPoolState(poolBState);
-      cacheDataProvider.loadTickArrayCache(
-        poolStateAData.tick,
-        poolStateAData.tickSpacing
-      );
+      const poolStateBData = await stateFetcher.getPoolState(poolBState);
+      const ammConfigData = await stateFetcher.getAmmConfig(ammConfig);
 
       ammPoolB = new AmmPool(
         ctx,
         poolBState,
-        poolStateAData,
+        poolStateBData,
+        ammConfigData,
         stateFetcher,
         cacheDataProvider
       );
-      console.log(poolStateAData);
+      console.log(poolStateBData);
       const additionalComputeBudgetInstruction =
         ComputeBudgetProgram.requestUnits({
           units: 400000,
           additionalFee: 0,
         });
 
-      const openIx = await openPosition(
+      const [_, openIx] = await openPosition(
         {
           payer: owner,
           positionNftOwner: owner,
@@ -441,12 +425,9 @@ describe("test with given pool", async () => {
     });
 
     it("router two pool swap", async () => {
-    
-      console.log("token1.publicKey:",token1.publicKey.toString())
+      console.log("token1.publicKey:", token1.publicKey.toString());
       const ix = await swapRouterBaseIn(
         owner,
-        new BN(100_000),
-        new BN(0),
         {
           ammPool: ammPoolA,
           inputTokenMint: token1.publicKey,
@@ -458,7 +439,9 @@ describe("test with given pool", async () => {
             ammPool: ammPoolB,
             outputTokenAccount: ownerToken2Account,
           },
-        ]
+        ],
+        new BN(100_000),
+        0.01
       );
 
       const tx = await sendTransaction(

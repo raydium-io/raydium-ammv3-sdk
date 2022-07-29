@@ -3,20 +3,17 @@ import * as metaplex from "@metaplex/js";
 import {
   Token,
   TOKEN_PROGRAM_ID,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import * as chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 chai.use(chaiAsPromised);
 import { AmmPool, CacheDataProviderImpl } from "./pool";
-import { SqrtPriceMath, LiquidityMath } from "./math";
-import { StateFetcher } from "./states";
+import { SqrtPriceMath } from "./math";
+import { StateFetcher,OBSERVATION_STATE_LEN } from "./states";
 
 import {
   accountExist,
   getAmmConfigAddress,
-  getPoolAddress,
-  getPersonalPositionAddress,
   sendTransaction,
 } from "./utils";
 
@@ -177,7 +174,7 @@ describe("test with given pool", async () => {
       token0 = token1;
       token1 = temp;
     }
-  
+
     console.log("Token 0", token0.publicKey.toString());
     console.log("Token 1", token1.publicKey.toString());
 
@@ -205,29 +202,11 @@ describe("test with given pool", async () => {
     console.log("ownerToken0Account key: ", ownerToken0Account.toString());
     console.log("ownerToken1Account key: ", ownerToken1Account.toString());
     console.log("ownerToken2Account key: ", ownerToken2Account.toString());
-    // const positionANftAccount = await Token.getAssociatedTokenAddress(
-    //   ASSOCIATED_TOKEN_PROGRAM_ID,
-    //   TOKEN_PROGRAM_ID,
-    //   nftMintAKeypair.publicKey,
-    //   owner
-    // );
-
-    // console.log("positionANftAccount key: ", positionANftAccount.toString());
-    // const positionBNftAccount = await Token.getAssociatedTokenAddress(
-    //   ASSOCIATED_TOKEN_PROGRAM_ID,
-    //   TOKEN_PROGRAM_ID,
-    //   nftMintBKeypair.publicKey,
-    //   owner
-    // );
-    // console.log("positionBNftAccount key: ", positionBNftAccount.toString());
   });
 
   describe("init-amm-env", async () => {
     it("create amm config", async () => {
-      const [address1, _] = await getAmmConfigAddress(
-        1,
-        ctx.program.programId
-      );
+      const [address1, _] = await getAmmConfigAddress(1, ctx.program.programId);
       ammConfig = address1;
       if (await accountExist(connection, address1)) {
         return;
@@ -247,19 +226,19 @@ describe("test with given pool", async () => {
         confirmOptions
       );
       console.log("init amm config tx: ", tx);
-
-      const ammConfigData = await stateFetcher.getAmmConfig(ammConfig);
-      console.log(
-        "ammConfigData.bump: ",
-        ammConfigData.bump,
-        "owner:",
-        ammConfigData.owner.toString(),
-        "admin:",
-        superAdmin.publicKey.toString()
-      );
     });
 
     it("create pool", async () => {
+      const observation = new Keypair();
+      const createObvIx = SystemProgram.createAccount({
+        fromPubkey: owner,
+        newAccountPubkey: observation.publicKey,
+        lamports: await ctx.provider.connection.getMinimumBalanceForRentExemption(
+          OBSERVATION_STATE_LEN
+        ),
+        space: OBSERVATION_STATE_LEN,
+        programId: ctx.program.programId,
+      });
       const [address, ixs] = await createPool(
         ctx,
         {
@@ -267,14 +246,16 @@ describe("test with given pool", async () => {
           ammConfig: ammConfig,
           tokenMint0: token0.publicKey,
           tokenMint1: token1.publicKey,
+          observation: observation.publicKey,
         },
         new Decimal("1")
       );
       poolAState = address;
+      console.log("poolAState:",poolAState.toString())
       const tx = await sendTransaction(
         connection,
-        ixs,
-        [ownerKeyPair],
+        [createObvIx, ixs],
+        [ownerKeyPair, observation],
         confirmOptions
       );
       console.log("create pool tx: ", tx);
@@ -285,10 +266,12 @@ describe("test with given pool", async () => {
     it("open personal position", async () => {
       const cacheDataProvider = new CacheDataProviderImpl(program, poolAState);
       const poolStateAData = await stateFetcher.getPoolState(poolAState);
+      const ammConfigData = await stateFetcher.getAmmConfig(ammConfig);
       ammPoolA = new AmmPool(
         ctx,
         poolAState,
         poolStateAData,
+        ammConfigData,
         stateFetcher,
         cacheDataProvider
       );
@@ -297,9 +280,9 @@ describe("test with given pool", async () => {
           units: 400000,
           additionalFee: 0,
         });
-      
+
       let openIx: TransactionInstruction;
-      [personalPositionAState,openIx] = await openPosition(
+      [personalPositionAState, openIx] = await openPosition(
         {
           payer: owner,
           positionNftOwner: owner,
@@ -308,7 +291,7 @@ describe("test with given pool", async () => {
           token1Account: ownerToken1Account,
         },
         ammPoolA,
-        -2* poolStateAData.tickSpacing,
+        -2 * poolStateAData.tickSpacing,
         2 * poolStateAData.tickSpacing,
         new BN(1_000_000),
         new BN(1_000_000)
@@ -330,7 +313,6 @@ describe("test with given pool", async () => {
       const personalPositionData = await stateFetcher.getPersonalPositionState(
         personalPositionAState
       );
-      await ammPoolA.reload(true)
       const ix = await increaseLiquidity(
         {
           positionNftOwner: owner,
@@ -352,7 +334,7 @@ describe("test with given pool", async () => {
       console.log("increaseLiquidity tx: ", tx);
     });
   });
-  return
+
   describe("#decrease_liquidity", () => {
     it("burn liquidity as owner", async () => {
       const personalPositionData = await stateFetcher.getPersonalPositionState(
@@ -382,9 +364,9 @@ describe("test with given pool", async () => {
 
   describe("#swap_base_input_single", () => {
     it("zero to one swap with a limit price", async () => {
-      await ammPoolA.reload();
+      await ammPoolA.reload(true);
       const amountIn = new BN(100_000);
-      const sqrtPriceLimitX64 = ammPoolA.poolState.sqrtPriceX64.subn(1000000);
+      const sqrtPriceLimitX64 = ammPoolA.poolState.sqrtPriceX64.sub(new BN(100000000000));
 
       const ix = await swapBaseIn(
         {
@@ -409,6 +391,7 @@ describe("test with given pool", async () => {
     });
 
     it("zero to one swap without a limit price", async () => {
+      await ammPoolA.reload(true);
       const amountIn = new BN(100_000);
       const ix = await swapBaseIn(
         {
@@ -430,7 +413,7 @@ describe("test with given pool", async () => {
       console.log("swap tx:", tx);
     });
   });
-  return;
+
   describe("#swap_base_output_single", () => {
     it("zero for one swap base output", async () => {
       const amountOut = new BN(100_000);
@@ -463,39 +446,74 @@ describe("test with given pool", async () => {
   });
 
   describe("#swap_router_base_in", () => {
+    it("create second pool", async () => {
+      const observation = new Keypair();
+      const createObvIx = SystemProgram.createAccount({
+        fromPubkey: owner,
+        newAccountPubkey: observation.publicKey,
+        lamports: await ctx.provider.connection.getMinimumBalanceForRentExemption(
+          OBSERVATION_STATE_LEN
+        ),
+        space: OBSERVATION_STATE_LEN,
+        programId: ctx.program.programId,
+      });
+
+      const [address, ixs] = await createPool(
+        ctx,
+        {
+          poolCreator: owner,
+          ammConfig: ammConfig,
+          tokenMint0: token1.publicKey,
+          tokenMint1: token2.publicKey,
+          observation: observation.publicKey,
+        },
+        new Decimal("1")
+      );
+      poolBState = address;
+      console.log("poolBState:",poolBState.toString())
+      const tx = await sendTransaction(
+        connection,
+        [createObvIx, ixs],
+        [ownerKeyPair, observation],
+        confirmOptions
+      );
+      console.log("create pool b tx: ", tx);
+    });
+
     it("open second pool position", async () => {
       const cacheDataProvider = new CacheDataProviderImpl(program, poolBState);
-      const poolStateAData = await stateFetcher.getPoolState(poolBState);
+      const poolStateBData = await stateFetcher.getPoolState(poolBState);
       cacheDataProvider.loadTickArrayCache(
-        poolStateAData.tick,
-        poolStateAData.tickSpacing
+        poolStateBData.tickCurrent,
+        poolStateBData.tickSpacing
       );
-
+      const ammConfigData = await stateFetcher.getAmmConfig(ammConfig);
       ammPoolB = new AmmPool(
         ctx,
         poolBState,
-        poolStateAData,
+        poolStateBData,
+        ammConfigData,
         stateFetcher,
         cacheDataProvider
       );
-      console.log(poolStateAData);
+      console.log(poolStateBData);
       const additionalComputeBudgetInstruction =
         ComputeBudgetProgram.requestUnits({
           units: 400000,
           additionalFee: 0,
         });
 
-      const openIx = await openPosition(
+      const [positionBddress, openIx] = await openPosition(
         {
           payer: owner,
           positionNftOwner: owner,
           positionNftMint: nftMintBKeypair.publicKey,
-          token0Account: ownerToken0Account,
+          token0Account: ownerToken1Account,
           token1Account: ownerToken2Account,
         },
         ammPoolB,
-        -120,
-        120,
+        -3 * poolStateBData.tickSpacing,
+        3 * poolStateBData.tickSpacing,
         new BN(1_000_000),
         new BN(1_000_000)
       );
@@ -510,14 +528,13 @@ describe("test with given pool", async () => {
     });
 
     it("router two pool swap", async () => {
-      console.log("token1.publicKey:", token1.publicKey.toString());
+      await ammPoolA.reload(true);
+      await ammPoolB.reload(true);
       const ix = await swapRouterBaseIn(
         owner,
-        new BN(100_000),
-        new BN(0),
         {
           ammPool: ammPoolA,
-          inputTokenMint: token1.publicKey,
+          inputTokenMint: token0.publicKey,
           inputTokenAccount: ownerToken1Account,
           outputTokenAccount: ownerToken0Account,
         },
@@ -526,7 +543,9 @@ describe("test with given pool", async () => {
             ammPool: ammPoolB,
             outputTokenAccount: ownerToken2Account,
           },
-        ]
+        ],
+        new BN(100_000),
+        0.02
       );
 
       const tx = await sendTransaction(

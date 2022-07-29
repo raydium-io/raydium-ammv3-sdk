@@ -1,8 +1,6 @@
-import JSBI from "jsbi";
 import {
   ONE,
   ZERO,
-  Q64,
   U64Resolution,
   MaxUint128,
   MIN_TICK,
@@ -19,13 +17,6 @@ const BIT_PRECISION = 14;
 const LOG_B_2_X32 = "59543866431248";
 const LOG_B_P_ERR_MARGIN_LOWER_X64 = "184467440737095516";
 const LOG_B_P_ERR_MARGIN_UPPER_X64 = "15793534762490258745";
-
-function mulShift(val: JSBI, mulBy: string): JSBI {
-  return JSBI.signedRightShift(
-    JSBI.multiply(val, JSBI.BigInt(mulBy)),
-    JSBI.BigInt(64)
-  );
-}
 
 function mulRightShift(val: BN, mulBy: BN): BN {
   return signedRightShift(val.mul(mulBy), 64, 256);
@@ -193,6 +184,11 @@ export abstract class SqrtPriceMath {
     }
   }
 
+  /**
+   * 
+   * @param tick 
+   * @returns 
+   */
   public static getSqrtPriceX64FromTick(tick: number): BN {
     if (!Number.isInteger(tick)) {
       throw new Error("tick must be integer");
@@ -202,86 +198,60 @@ export abstract class SqrtPriceMath {
     }
     const tickAbs: number = tick < 0 ? tick * -1 : tick;
 
-    let ratio: JSBI =
+    let ratio: BN =
       (tickAbs & 0x1) != 0
-        ? JSBI.BigInt("0xfffcb933bd6fb800")
-        : JSBI.BigInt("0x10000000000000000");
-    if ((tickAbs & 0x2) != 0) ratio = mulShift(ratio, "0xfff97272373d4000");
-    if ((tickAbs & 0x4) != 0) ratio = mulShift(ratio, "0xfff2e50f5f657000");
-    if ((tickAbs & 0x8) != 0) ratio = mulShift(ratio, "0xffe5caca7e10f000");
-    if ((tickAbs & 0x10) != 0) ratio = mulShift(ratio, "0xffcb9843d60f7000");
-    if ((tickAbs & 0x20) != 0) ratio = mulShift(ratio, "0xff973b41fa98e800");
-    if ((tickAbs & 0x40) != 0) ratio = mulShift(ratio, "0xff2ea16466c9b000");
-    if ((tickAbs & 0x80) != 0) ratio = mulShift(ratio, "0xfe5dee046a9a3800");
-    if ((tickAbs & 0x100) != 0) ratio = mulShift(ratio, "0xfcbe86c7900bb000");
-    if ((tickAbs & 0x200) != 0) ratio = mulShift(ratio, "0xf987a7253ac65800");
-    if ((tickAbs & 0x400) != 0) ratio = mulShift(ratio, "0xf3392b0822bb6000");
-    if ((tickAbs & 0x800) != 0) ratio = mulShift(ratio, "0xe7159475a2caf000");
-    if ((tickAbs & 0x1000) != 0) ratio = mulShift(ratio, "0xd097f3bdfd2f2000");
-    if ((tickAbs & 0x2000) != 0) ratio = mulShift(ratio, "0xa9f746462d9f8000");
-    if ((tickAbs & 0x4000) != 0) ratio = mulShift(ratio, "0x70d869a156f31c00");
-    if ((tickAbs & 0x8000) != 0) ratio = mulShift(ratio, "0x31be135f97ed3200");
-    if ((tickAbs & 0x10000) != 0) ratio = mulShift(ratio, "0x9aa508b5b85a500");
-    if ((tickAbs & 0x20000) != 0) ratio = mulShift(ratio, "0x5d6af8dedc582c");
-    if ((tickAbs & 0x40000) != 0) ratio = mulShift(ratio, "0x2216e584f5fa");
+        ? new BN("18445821805675395072")
+        : new BN("18446744073709551616");
+    if ((tickAbs & 0x2) != 0)
+      ratio = mulRightShift(ratio, new BN("18444899583751176192"));
+    if ((tickAbs & 0x4) != 0)
+      ratio = mulRightShift(ratio, new BN("18443055278223355904"));
+    if ((tickAbs & 0x8) != 0)
+      ratio = mulRightShift(ratio, new BN("18439367220385607680"));
+    if ((tickAbs & 0x10) != 0)
+      ratio = mulRightShift(ratio, new BN("18431993317065453568"));
+    if ((tickAbs & 0x20) != 0)
+      ratio = mulRightShift(ratio, new BN("18417254355718170624"));
+    if ((tickAbs & 0x40) != 0)
+      ratio = mulRightShift(ratio, new BN("18387811781193609216"));
+    if ((tickAbs & 0x80) != 0)
+      ratio = mulRightShift(ratio, new BN("18329067761203558400"));
+    if ((tickAbs & 0x100) != 0)
+      ratio = mulRightShift(ratio, new BN("18212142134806163456"));
+    if ((tickAbs & 0x200) != 0)
+      ratio = mulRightShift(ratio, new BN("17980523815641700352"));
+    if ((tickAbs & 0x400) != 0)
+      ratio = mulRightShift(ratio, new BN("17526086738831433728"));
+    if ((tickAbs & 0x800) != 0)
+      ratio = mulRightShift(ratio, new BN("16651378430235570176"));
+    if ((tickAbs & 0x1000) != 0)
+      ratio = mulRightShift(ratio, new BN("15030750278694412288"));
+    if ((tickAbs & 0x2000) != 0)
+      ratio = mulRightShift(ratio, new BN("12247334978884435968"));
+    if ((tickAbs & 0x4000) != 0)
+      ratio = mulRightShift(ratio, new BN("8131365268886854656"));
+    if ((tickAbs & 0x8000) != 0)
+      ratio = mulRightShift(ratio, new BN("3584323654725218816"));
+    if ((tickAbs & 0x10000) != 0)
+      ratio = mulRightShift(ratio, new BN("696457651848324352"));
+    if ((tickAbs & 0x20000) != 0)
+      ratio = mulRightShift(ratio, new BN("26294789957507116"));
+    if ((tickAbs & 0x40000) != 0)
+      ratio = mulRightShift(ratio, new BN("37481735321082"));
 
-    if (tick > 0) ratio = JSBI.divide(JSBI.BigInt(MaxUint128.toString()), ratio);
-    return new BN(ratio.toString());
+    if (tick > 0) ratio = MaxUint128.div(ratio);
+    return ratio;
   }
 
-  // public static getSqrtPriceX64FromTick(tick: number): BN {
-  //   if (!Number.isInteger(tick)) {
-  //     throw new Error("tick must be integer");
-  //   }
-  //   if (tick < MIN_TICK || tick > MAX_TICK) {
-  //     throw new Error("tick must be in MIN_TICK and MAX_TICK");
-  //   }
-  //   const tickAbs: number = tick < 0 ? tick * -1 : tick;
+  /**
+   * 
+   * @param price 
+   * @returns 
+   */
+  public static getTickFromPrice(price: Decimal): number {
+    return SqrtPriceMath.getTickFromSqrtPriceX64( SqrtPriceMath.priceToSqrtPriceX64(price))
+  }
 
-  //   let ratio: BN =
-  //     (tickAbs & 0x1) != 0
-  //       ? new BN("18445821805675395000")
-  //       : new BN("18446744073709552000");
-  //   if ((tickAbs & 0x2) != 0)
-  //     ratio = mulRightShift(ratio, new BN("18444899583751176000"));
-  //   if ((tickAbs & 0x4) != 0)
-  //     ratio = mulRightShift(ratio, new BN("18443055278223356000"));
-  //   if ((tickAbs & 0x8) != 0)
-  //     ratio = mulRightShift(ratio, new BN("18439367220385608000"));
-  //   if ((tickAbs & 0x10) != 0)
-  //     ratio = mulRightShift(ratio, new BN("18431993317065454000"));
-  //   if ((tickAbs & 0x20) != 0)
-  //     ratio = mulRightShift(ratio, new BN("18417254355718170000"));
-  //   if ((tickAbs & 0x40) != 0)
-  //     ratio = mulRightShift(ratio, new BN("18387811781193610000"));
-  //   if ((tickAbs & 0x80) != 0)
-  //     ratio = mulRightShift(ratio, new BN("18329067761203558000"));
-  //   if ((tickAbs & 0x100) != 0)
-  //     ratio = mulRightShift(ratio, new BN("18212142134806163000"));
-  //   if ((tickAbs & 0x200) != 0)
-  //     ratio = mulRightShift(ratio, new BN("17980523815641700000"));
-  //   if ((tickAbs & 0x400) != 0)
-  //     ratio = mulRightShift(ratio, new BN("17526086738831434000"));
-  //   if ((tickAbs & 0x800) != 0)
-  //     ratio = mulRightShift(ratio, new BN("16651378430235570000"));
-  //   if ((tickAbs & 0x1000) != 0)
-  //     ratio = mulRightShift(ratio, new BN("15030750278694412000"));
-  //   if ((tickAbs & 0x2000) != 0)
-  //     ratio = mulRightShift(ratio, new BN("12247334978884436000"));
-  //   if ((tickAbs & 0x4000) != 0)
-  //     ratio = mulRightShift(ratio, new BN("8131365268886855000"));
-  //   if ((tickAbs & 0x8000) != 0)
-  //     ratio = mulRightShift(ratio, new BN("3584323654725219000"));
-  //   if ((tickAbs & 0x10000) != 0)
-  //     ratio = mulRightShift(ratio, new BN("696457651848324400"));
-  //   if ((tickAbs & 0x20000) != 0)
-  //     ratio = mulRightShift(ratio, new BN("26294789957507116"));
-  //   if ((tickAbs & 0x40000) != 0)
-  //     ratio = mulRightShift(ratio, new BN("37481735321082"));
-
-  //   if (tick > 0) ratio = MaxUint128.div(ratio);
-  //   return ratio;
-  // }
 
   /**
    *

@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { Tick } from "./tick";
+import { Tick } from "./tickArray";
 
 
 export interface CacheDataProvider {

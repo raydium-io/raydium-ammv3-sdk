@@ -1,10 +1,15 @@
 import { BN } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 
+export const OBSERVATION_STATE_LEN = 52121;
+
 export type AmmConfig = {
   bump: number;
+  index: number;
   owner: PublicKey;
   protocolFeeRate: number;
+  tradeFeeRate: number;
+  tickSpacing: number;
 };
 
 export type ObservationState = {
@@ -14,9 +19,9 @@ export type ObservationState = {
 
 export type Observation = {
   blockTimestamp: number;
-  sqrtPriceX64:BN;
+  sqrtPriceX64: BN;
   tickCumulative: BN;
-  CumulativeTimePriceX64: BN;
+  cumulativeTimePriceX64: BN;
 };
 
 export type PoolState = {

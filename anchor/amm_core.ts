@@ -31,7 +31,7 @@ export type AmmCore = {
           "type": "u16"
         },
         {
-          "name": "globalFeeRate",
+          "name": "tradeFeeRate",
           "type": "u32"
         },
         {
@@ -101,7 +101,7 @@ export type AmmCore = {
         },
         {
           "name": "observationState",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -543,7 +543,7 @@ export type AmmCore = {
         },
         {
           "name": "personalPosition",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -942,7 +942,7 @@ export type AmmCore = {
             "type": "u32"
           },
           {
-            "name": "globalFeeRate",
+            "name": "tradeFeeRate",
             "type": "u32"
           },
           {
@@ -960,6 +960,10 @@ export type AmmCore = {
           {
             "name": "initialized",
             "type": "bool"
+          },
+          {
+            "name": "ammPool",
+            "type": "publicKey"
           },
           {
             "name": "observations",
@@ -1129,6 +1133,22 @@ export type AmmCore = {
             "type": "u64"
           },
           {
+            "name": "swapInAmountToken0",
+            "type": "u128"
+          },
+          {
+            "name": "swapOutAmountToken1",
+            "type": "u128"
+          },
+          {
+            "name": "swapInAmountToken1",
+            "type": "u128"
+          },
+          {
+            "name": "swapOutAmountToken0",
+            "type": "u128"
+          },
+          {
             "name": "rewardLastUpdatedTimestamp",
             "type": "u64"
           },
@@ -1215,7 +1235,7 @@ export type AmmCore = {
                 {
                   "defined": "TickState"
                 },
-                100
+                80
               ]
             }
           }
@@ -1795,26 +1815,36 @@ export type AmmCore = {
     },
     {
       "code": 6021,
+      "name": "InvalidInputPoolVault",
+      "msg": "Input pool vault is invalid"
+    },
+    {
+      "code": 6022,
+      "name": "TooSmallInputOrOutputAmount",
+      "msg": "Swap input or output amount is too small"
+    },
+    {
+      "code": 6023,
       "name": "InvalidRewardIndex",
       "msg": "Invalid reward index"
     },
     {
-      "code": 6022,
+      "code": 6024,
       "name": "InvalidRewardInitParam",
       "msg": "Invalid reward init param"
     },
     {
-      "code": 6023,
+      "code": 6025,
       "name": "InvalidRewardDesiredAmount",
       "msg": "Invalid collect reward desired amount"
     },
     {
-      "code": 6024,
+      "code": 6026,
       "name": "InvalidRewardInputAccountNumber",
       "msg": "Invalid collect reward input account number"
     },
     {
-      "code": 6025,
+      "code": 6027,
       "name": "UnInitializedRewardInfo",
       "msg": "uninitialized reward info"
     }
@@ -1854,7 +1884,7 @@ export const IDL: AmmCore = {
           "type": "u16"
         },
         {
-          "name": "globalFeeRate",
+          "name": "tradeFeeRate",
           "type": "u32"
         },
         {
@@ -1924,7 +1954,7 @@ export const IDL: AmmCore = {
         },
         {
           "name": "observationState",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -2366,7 +2396,7 @@ export const IDL: AmmCore = {
         },
         {
           "name": "personalPosition",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -2765,7 +2795,7 @@ export const IDL: AmmCore = {
             "type": "u32"
           },
           {
-            "name": "globalFeeRate",
+            "name": "tradeFeeRate",
             "type": "u32"
           },
           {
@@ -2783,6 +2813,10 @@ export const IDL: AmmCore = {
           {
             "name": "initialized",
             "type": "bool"
+          },
+          {
+            "name": "ammPool",
+            "type": "publicKey"
           },
           {
             "name": "observations",
@@ -2952,6 +2986,22 @@ export const IDL: AmmCore = {
             "type": "u64"
           },
           {
+            "name": "swapInAmountToken0",
+            "type": "u128"
+          },
+          {
+            "name": "swapOutAmountToken1",
+            "type": "u128"
+          },
+          {
+            "name": "swapInAmountToken1",
+            "type": "u128"
+          },
+          {
+            "name": "swapOutAmountToken0",
+            "type": "u128"
+          },
+          {
             "name": "rewardLastUpdatedTimestamp",
             "type": "u64"
           },
@@ -3038,7 +3088,7 @@ export const IDL: AmmCore = {
                 {
                   "defined": "TickState"
                 },
-                100
+                80
               ]
             }
           }
@@ -3618,26 +3668,36 @@ export const IDL: AmmCore = {
     },
     {
       "code": 6021,
+      "name": "InvalidInputPoolVault",
+      "msg": "Input pool vault is invalid"
+    },
+    {
+      "code": 6022,
+      "name": "TooSmallInputOrOutputAmount",
+      "msg": "Swap input or output amount is too small"
+    },
+    {
+      "code": 6023,
       "name": "InvalidRewardIndex",
       "msg": "Invalid reward index"
     },
     {
-      "code": 6022,
+      "code": 6024,
       "name": "InvalidRewardInitParam",
       "msg": "Invalid reward init param"
     },
     {
-      "code": 6023,
+      "code": 6025,
       "name": "InvalidRewardDesiredAmount",
       "msg": "Invalid collect reward desired amount"
     },
     {
-      "code": 6024,
+      "code": 6026,
       "name": "InvalidRewardInputAccountNumber",
       "msg": "Invalid collect reward input account number"
     },
     {
-      "code": 6025,
+      "code": 6027,
       "name": "UnInitializedRewardInfo",
       "msg": "uninitialized reward info"
     }

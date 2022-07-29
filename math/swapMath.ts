@@ -123,7 +123,6 @@ export abstract class SwapMath {
           tickSpacing,
           zeroForOne
         );
-
       step.tickNext = nextInitTick.tick;
       step.initialized = nextInitTick.liquidityGross.gtn(0);
 
