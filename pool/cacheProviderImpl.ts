@@ -114,16 +114,17 @@ export class CacheDataProviderImpl implements CacheDataProvider {
    * @param tickSpacing The tick spacing for the pool
    * @returns
    */
-  nextInitializedTick(
+  async nextInitializedTick(
     tickIndex: number,
     tickSpacing: number,
     zeroForOne: boolean
-  ): [Tick, PublicKey, number] {
-    let [nextTick, address, startIndex] = this.nextInitializedTickInOneArray(
-      tickIndex,
-      tickSpacing,
-      zeroForOne
-    );
+  ): Promise<[Tick, PublicKey, number]> {
+    let [nextTick, address, startIndex] =
+      await this.nextInitializedTickInOneArray(
+        tickIndex,
+        tickSpacing,
+        zeroForOne
+      );
     while (nextTick == undefined || nextTick.liquidityGross.lten(0)) {
       const nextStartIndex = getNextTickArrayStartIndex(
         startIndex,
@@ -134,7 +135,7 @@ export class CacheDataProviderImpl implements CacheDataProvider {
       if (cachedTickArray == undefined) {
         throw new Error("No invaild tickArray cache");
       }
-      [nextTick, address, startIndex] = this.firstInitializedTickInOneArray(
+      [nextTick, address, startIndex] = await this.firstInitializedTickInOneArray(
         cachedTickArray,
         zeroForOne
       );
@@ -142,10 +143,10 @@ export class CacheDataProviderImpl implements CacheDataProvider {
     return [nextTick, address, startIndex];
   }
 
-  firstInitializedTickInOneArray(
+  async firstInitializedTickInOneArray(
     tickArray: TickArray,
     zeroForOne: boolean
-  ): [Tick, PublicKey, number] {
+  ): Promise<[Tick, PublicKey, number]> {
     let nextInitializedTick: Tick;
     if (zeroForOne) {
       let i = TICK_ARRAY_SIZE - 1;
@@ -168,7 +169,12 @@ export class CacheDataProviderImpl implements CacheDataProvider {
         i = i + 1;
       }
     }
-    return [nextInitializedTick, tickArray.ammPool, tickArray.startTickIndex];
+    const [tickArrayAddress, _] = await getTickArrayAddress(
+      this.poolAddress,
+      this.program.programId,
+      tickArray.startTickIndex
+    );
+    return [nextInitializedTick, tickArrayAddress, tickArray.startTickIndex];
   }
 
   /**
@@ -178,11 +184,11 @@ export class CacheDataProviderImpl implements CacheDataProvider {
    * @param zeroForOne
    * @returns
    */
-  nextInitializedTickInOneArray(
+  async nextInitializedTickInOneArray(
     tickIndex: number,
     tickSpacing: number,
     zeroForOne: boolean
-  ): [Tick, PublicKey, number] {
+  ): Promise<[Tick, PublicKey, number]> {
     const startIndex = getArrayStartIndex(tickIndex, tickSpacing);
     let isStartIndex = startIndex == tickIndex;
     let tickPositionInArray = Math.floor(
@@ -215,9 +221,14 @@ export class CacheDataProviderImpl implements CacheDataProvider {
         tickPositionInArray = tickPositionInArray + 1;
       }
     }
+    const [tickArrayAddress, _] = await getTickArrayAddress(
+      this.poolAddress,
+      this.program.programId,
+      startIndex
+    );
     return [
       nextInitializedTick,
-      cachedTickArray.ammPool,
+      tickArrayAddress,
       cachedTickArray.startTickIndex,
     ];
   }

@@ -8,18 +8,10 @@ export const POOL_VAULT_SEED = Buffer.from(
 export const POOL_REWARD_VAULT_SEED = Buffer.from(
   anchor.utils.bytes.utf8.encode("pool_reward_vault")
 );
-export const FEE_SEED = Buffer.from(anchor.utils.bytes.utf8.encode("fee"));
-export const BITMAP_SEED = Buffer.from(
-  anchor.utils.bytes.utf8.encode("tick_bitmap")
-);
 export const POSITION_SEED = Buffer.from(
   anchor.utils.bytes.utf8.encode("position")
 );
 export const TICK_ARRAY_SEED = Buffer.from(anchor.utils.bytes.utf8.encode("tick_array"));
-export const OBSERVATION_SEED = Buffer.from(
-  anchor.utils.bytes.utf8.encode("observation")
-);
-
 
 export function u16ToBytes(num: number) {
     const arr = new ArrayBuffer(2)

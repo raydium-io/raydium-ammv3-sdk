@@ -1,14 +1,14 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Program, BN } from "@project-serum/anchor";
-import { AmmCore } from "../anchor/amm_core";
+import { AmmV3 } from "../anchor/amm_v3";
 
-type UpdateRewardInfosAccounts = {
+export type UpdateRewardInfosAccounts = {
   ammConfig: PublicKey;
   poolState: PublicKey;
 };
 
 export function updateRewardInfosInstruction(
-  program: Program<AmmCore>,
+  program: Program<AmmV3>,
   accounts: UpdateRewardInfosAccounts
 ): Promise<TransactionInstruction> {
   return program.methods.updateRewardInfos().accounts(accounts).instruction();

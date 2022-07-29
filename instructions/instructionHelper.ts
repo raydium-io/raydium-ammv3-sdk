@@ -54,7 +54,6 @@ import {
   createPoolInstruction,
   increaseLiquidityInstruction,
   decreaseLiquidityInstruction,
-  increaseObservationInstruction,
   collectFeeInstruction,
   swapInstruction,
   swapRouterBaseInInstruction,
@@ -148,11 +147,6 @@ export async function createPool(
     ctx.program.programId
   );
 
-  // const [observation, _bump4] = await getObservationAddress(
-  //   poolAddres,
-  //   ctx.program.programId
-  // );
-
   const initialPriceX64 = SqrtPriceMath.priceToSqrtPriceX64(initialPrice);
   const creatPoolIx = await createPoolInstruction(
     ctx.program,
@@ -241,6 +235,7 @@ export async function openPosition(
     ctx.program.programId,
     tickArrayUpperStartIndex
   );
+
   const positionANftAccount = await Token.getAssociatedTokenAddress(
     ASSOCIATED_TOKEN_PROGRAM_ID,
     TOKEN_PROGRAM_ID,
@@ -650,7 +645,9 @@ async function prepareOnePool(
       param.inputTokenMint,
       inputAmount
     );
-
+  if (remainingAccounts.length == 0) {
+    throw new Error("must has one tickArray");
+  }
   return {
     amountOut: expectedAmountOut,
     outputTokenMint,
@@ -688,7 +685,7 @@ async function prepareOnePool(
       },
       ...remainingAccounts,
     ],
-    additionLength: remainingAccounts.length,
+    additionLength: remainingAccounts.length-1,
   };
 }
 
@@ -697,7 +694,6 @@ export async function swapRouterBaseIn(
   firstPoolParam: RouterPoolParam,
   remainRouterPools: {
     ammPool: AmmPool;
-    // outputTokenMint: PublicKey;
     outputTokenAccount: PublicKey;
   }[],
   amountIn: BN,
@@ -707,6 +703,8 @@ export async function swapRouterBaseIn(
   let remainingAccounts: AccountMeta[] = [];
 
   let result = await prepareOnePool(amountIn, firstPoolParam);
+  additionalAccountsArray.push(result.additionLength);
+  remainingAccounts.push(...result.remains);
   for (let i = 0; i < remainRouterPools.length; i++) {
     const param: RouterPoolParam = {
       ammPool: remainRouterPools[i].ammPool,
@@ -715,7 +713,7 @@ export async function swapRouterBaseIn(
       outputTokenAccount: remainRouterPools[i].outputTokenAccount,
     };
     result = await prepareOnePool(result.amountOut, param);
-    additionalAccountsArray.push[result.additionLength];
+    additionalAccountsArray.push(result.additionLength);
     remainingAccounts.push(...result.remains);
   }
   let amountOutMin = new BN(0);

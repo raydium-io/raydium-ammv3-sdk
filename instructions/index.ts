@@ -5,7 +5,6 @@ export * from "./collectRewards";
 export * from "./createPool";
 export * from "./decreaseLiquidity";
 export * from "./increaseLiquidity";
-export * from "./increaseObservation";
 export * from "./openPosition";
 export * from "./swap";
 export * from "./swapRouterBaseIn";

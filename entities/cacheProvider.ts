@@ -1,9 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { Tick } from "./tickArray";
 
-
 export interface CacheDataProvider {
-
   /**
    *  Return the next tick and tickArray info
    * @param tick  The current tick
@@ -14,6 +12,5 @@ export interface CacheDataProvider {
     tick: number,
     tickSpacing: number,
     zeroForOne: boolean
-  ): [Tick, PublicKey, number];
-
+  ): Promise<[Tick, PublicKey, number]>;
 }

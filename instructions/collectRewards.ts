@@ -4,9 +4,9 @@ import {
   AccountMeta,
 } from "@solana/web3.js";
 import { Program } from "@project-serum/anchor";
-import { AmmCore } from "../anchor/amm_core";
+import { AmmV3 } from "../anchor/amm_v3";
 
-type CollectRewardsAccounts = {
+export type CollectRewardsAccounts = {
   nftOwner: PublicKey;
   nftAccount: PublicKey;
   poolState: PublicKey;
@@ -19,7 +19,7 @@ type CollectRewardsAccounts = {
 };
 
 export function collectRewardsInstruction(
-  program: Program<AmmCore>,
+  program: Program<AmmV3>,
   accounts: CollectRewardsAccounts
 ): Promise<TransactionInstruction> {
   const {

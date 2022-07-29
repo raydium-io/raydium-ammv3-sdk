@@ -1,8 +1,8 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Program, BN } from "@project-serum/anchor";
-import { AmmCore } from "../anchor/amm_core";
+import { AmmV3 } from "../anchor/amm_v3";
 
-type OpenPositionAccounts = {
+export type OpenPositionAccounts = {
   payer: PublicKey;
   positionNftMint: PublicKey;
   positionNftOwner: PublicKey;
@@ -25,7 +25,7 @@ type OpenPositionAccounts = {
   metadataProgram: PublicKey;
 };
 
-type OpenPositionArgs = {
+export type OpenPositionArgs = {
   tickLowerIndex: number;
   tickUpperIndex: number;
   tickArrayLowerStartIndex: number;
@@ -37,7 +37,7 @@ type OpenPositionArgs = {
 };
 
 export function openPositionInstruction(
-  program: Program<AmmCore>,
+  program: Program<AmmV3>,
   args: OpenPositionArgs,
   accounts: OpenPositionAccounts,
 ): Promise<TransactionInstruction> {

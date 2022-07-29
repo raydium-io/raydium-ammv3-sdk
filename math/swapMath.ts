@@ -45,7 +45,7 @@ export abstract class SwapMath {
    * @param sqrtPriceLimitX64
    * @returns
    */
-  public static swapCompute(
+  public static async swapCompute(
     cacheDataProvider: CacheDataProvider,
     zeroForOne: boolean,
     fee: number,
@@ -55,13 +55,13 @@ export abstract class SwapMath {
     currentSqrtPriceX64: BN,
     amountSpecified: BN,
     sqrtPriceLimitX64?: BN
-  ): {
+  ): Promise<{
     amountCalculated: BN;
     sqrtPriceX64: BN;
     liquidity: BN;
     tickCurrent: number;
     accounts: AccountMeta[];
-  } {
+  }> {
     if (amountSpecified.eq(ZERO)) {
       throw new Error("amountSpecified must not be 0");
     }
@@ -118,7 +118,7 @@ export abstract class SwapMath {
 
       // save the bitmap, and the tick account if it is initialized
       const [nextInitTick, tickArrayAddress, tickAarrayStartIndex] =
-        cacheDataProvider.nextInitializedTick(
+        await cacheDataProvider.nextInitializedTick(
           state.tick,
           tickSpacing,
           zeroForOne

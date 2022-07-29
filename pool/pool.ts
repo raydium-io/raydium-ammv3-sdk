@@ -93,7 +93,7 @@ export class AmmPool {
       liquidity: updatedLiquidity,
       tickCurrent: updatedTick,
       accounts,
-    } = SwapMath.swapCompute(
+    } = await SwapMath.swapCompute(
       this.cacheDataProvider,
       zeroForOne,
       this.ammConfig.tradeFeeRate,
@@ -139,7 +139,7 @@ export class AmmPool {
       liquidity,
       tickCurrent,
       accounts,
-    } = SwapMath.swapCompute(
+    } = await SwapMath.swapCompute(
       this.cacheDataProvider,
       zeroForOne,
       this.ammConfig.tradeFeeRate,

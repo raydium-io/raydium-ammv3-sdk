@@ -1,8 +1,8 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Program, BN } from "@project-serum/anchor";
-import { AmmCore } from "../anchor/amm_core";
+import { AmmV3 } from "../anchor/amm_v3";
 
-type IncreaseLiquidityAccounts = {
+export type IncreaseLiquidityAccounts = {
   nftOwner: PublicKey;
   nftAccount: PublicKey;
   ammConfig: PublicKey;
@@ -18,7 +18,7 @@ type IncreaseLiquidityAccounts = {
   tokenProgram: PublicKey;
 };
 
-type IncreaseLiquidityArgs = {
+export type IncreaseLiquidityArgs = {
   amount0Desired: BN;
   amount1Desired: BN;
   amount0Min: BN;
@@ -26,7 +26,7 @@ type IncreaseLiquidityArgs = {
 };
 
 export function increaseLiquidityInstruction(
-  program: Program<AmmCore>,
+  program: Program<AmmV3>,
   args: IncreaseLiquidityArgs,
   accounts: IncreaseLiquidityAccounts
 ): Promise<TransactionInstruction> {

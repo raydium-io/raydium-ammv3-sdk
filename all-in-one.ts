@@ -496,7 +496,6 @@ describe("test with given pool", async () => {
         stateFetcher,
         cacheDataProvider
       );
-      console.log(poolStateBData);
       const additionalComputeBudgetInstruction =
         ComputeBudgetProgram.requestUnits({
           units: 400000,
@@ -530,13 +529,20 @@ describe("test with given pool", async () => {
     it("router two pool swap", async () => {
       await ammPoolA.reload(true);
       await ammPoolB.reload(true);
+
+      const additionalComputeBudgetInstruction =
+      ComputeBudgetProgram.requestUnits({
+        units: 400000,
+        additionalFee: 0,
+      });
+
       const ix = await swapRouterBaseIn(
         owner,
         {
           ammPool: ammPoolA,
           inputTokenMint: token0.publicKey,
-          inputTokenAccount: ownerToken1Account,
-          outputTokenAccount: ownerToken0Account,
+          inputTokenAccount: ownerToken0Account,
+          outputTokenAccount: ownerToken1Account,
         },
         [
           {
@@ -550,14 +556,14 @@ describe("test with given pool", async () => {
 
       const tx = await sendTransaction(
         connection,
-        [ix],
+        [additionalComputeBudgetInstruction,ix],
         [ownerKeyPair],
         confirmOptions
       );
       console.log("tx:", tx);
     });
   });
-
+return
   describe("#collect_fee", () => {
     it("collect fee as owner", async () => {
       const amount0Max = new BN(10);

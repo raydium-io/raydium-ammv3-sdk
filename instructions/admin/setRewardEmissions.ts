@@ -1,6 +1,6 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Program, BN } from "@project-serum/anchor";
-import { AmmCore } from "../../anchor/amm_core";
+import { AmmV3 } from "../../anchor/amm_v3";
 
 export type SetRewardEmissionsAccounts = {
   authority: PublicKey;
@@ -14,7 +14,7 @@ export type SetRewardEmissionsArgs = {
 };
 
 export function setRewardEmissionsInstruction(
-  program: Program<AmmCore>,
+  program: Program<AmmV3>,
   args: SetRewardEmissionsArgs,
   accounts: SetRewardEmissionsAccounts
 ): Promise<TransactionInstruction> {

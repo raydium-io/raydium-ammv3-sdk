@@ -1,8 +1,8 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Program } from "@project-serum/anchor";
-import { AmmCore } from "../anchor/amm_core";
+import { AmmV3 } from "../anchor/amm_v3";
 
-type ClosePositionAccounts = {
+export type ClosePositionAccounts = {
   nftOwner: PublicKey;
   nftAccount: PublicKey;
   ammConfig: PublicKey;
@@ -14,7 +14,7 @@ type ClosePositionAccounts = {
 };
 
 export function closePositionInstruction(
-  program: Program<AmmCore>,
+  program: Program<AmmV3>,
   accounts: ClosePositionAccounts
 ): Promise<TransactionInstruction> {
   return program.methods

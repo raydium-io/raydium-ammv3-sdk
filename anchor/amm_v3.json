@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "name": "amm_core",
+  "name": "amm_v3",
   "instructions": [
     {
       "name": "createAmmConfig",
@@ -1848,8 +1848,5 @@
       "name": "UnInitializedRewardInfo",
       "msg": "uninitialized reward info"
     }
-  ],
-  "metadata": {
-    "address": "Enmwn7qqmhUWhg3hhGiruY7apAJMNJscAvv8GwtzUKY3"
-  }
+  ]
 }

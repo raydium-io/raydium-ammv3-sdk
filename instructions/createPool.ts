@@ -1,8 +1,8 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Program, BN } from "@project-serum/anchor";
-import { AmmCore } from "../anchor/amm_core";
+import { AmmV3 } from "../anchor/amm_v3";
 
-type CreatePoolAccounts = {
+export type CreatePoolAccounts = {
   poolCreator: PublicKey;
   ammConfig: PublicKey;
   tokenMint0: PublicKey;
@@ -17,7 +17,7 @@ type CreatePoolAccounts = {
 };
 
 export function createPoolInstruction(
-  program: Program<AmmCore>,
+  program: Program<AmmV3>,
   initialPriceX64: BN,
   accounts: CreatePoolAccounts
 ): Promise<TransactionInstruction> {

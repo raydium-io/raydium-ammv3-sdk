@@ -10,6 +10,7 @@ export declare type Tick = {
 };
 
 export declare type TickArray = {
+  address: PublicKey;
   ammPool: PublicKey;
   startTickIndex: number;
   ticks: Tick[];

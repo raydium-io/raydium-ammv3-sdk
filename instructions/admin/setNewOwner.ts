@@ -1,6 +1,6 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Program ,BN} from "@project-serum/anchor";
-import { AmmCore } from "../../anchor/amm_core";
+import { AmmV3 } from "../../anchor/amm_v3";
 
 export type SetNewOwnerAccounts = {
     owner: PublicKey;
@@ -9,7 +9,7 @@ export type SetNewOwnerAccounts = {
   };
   
   export function setNewOwnerInstruction(
-    program: Program<AmmCore>,
+    program: Program<AmmV3>,
     accounts: SetNewOwnerAccounts,
   ): Promise<TransactionInstruction> {
     return  program.methods.setNewOwner().accounts(accounts).instruction()

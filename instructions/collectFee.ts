@@ -1,17 +1,17 @@
-import { PublicKey, TransactionInstruction } from "@solana/web3.js";
+import {TransactionInstruction } from "@solana/web3.js";
 import { Program, BN } from "@project-serum/anchor";
-import { AmmCore } from "../anchor/amm_core";
+import { AmmV3 } from "../anchor/amm_v3";
 import { DecreaseLiquidityAccounts } from "./decreaseLiquidity";
 
-type CollectFeeAccounts = {} & DecreaseLiquidityAccounts;
+export type CollectFeeAccounts = {} & DecreaseLiquidityAccounts;
 
-type CollectFeeArgs = {
+export type CollectFeeArgs = {
   amount0Max: BN;
   amount1Max: BN;
 };
 
 export function collectFeeInstruction(
-  program: Program<AmmCore>,
+  program: Program<AmmV3>,
   args: CollectFeeArgs,
   accounts: CollectFeeAccounts
 ): Promise<TransactionInstruction> {

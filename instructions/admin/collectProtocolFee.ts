@@ -1,6 +1,6 @@
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { Program, BN } from "@project-serum/anchor";
-import { AmmCore } from "../../anchor/amm_core";
+import { AmmV3 } from "../../anchor/amm_v3";
 
 export type CollectProtocolFeeAccounts = {
   owner: PublicKey;
@@ -19,7 +19,7 @@ export type CollectProtocolFeeArgs = {
 };
 
 export function collectProtocolFeeInstruction(
-  program: Program<AmmCore>,
+  program: Program<AmmV3>,
   args: CollectProtocolFeeArgs,
   accounts: CollectProtocolFeeAccounts
 

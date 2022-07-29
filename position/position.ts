@@ -1,5 +1,5 @@
-import { PublicKey,TransactionSignature } from "@solana/web3.js";
-import {PositionState, StateFetcher } from "../states";
+import { PublicKey, TransactionSignature } from "@solana/web3.js";
+import { PositionState, StateFetcher } from "../states";
 
 import {
   OpenPositionAccounts,
@@ -15,11 +15,11 @@ import {
 } from "../instructions";
 
 import { Program } from "@project-serum/anchor";
-import { AmmCore } from "../anchor/amm_core";
+import { AmmV3 } from "../anchor/amm_v3";
 import Decimal from "decimal.js";
 
 export class Position {
-  public readonly program: Program<AmmCore>;
+  public readonly program: Program<AmmV3>;
   public readonly stateFetcher: StateFetcher;
 
   public readonly address: PublicKey;
@@ -27,7 +27,7 @@ export class Position {
 
   public constructor(
     address: PublicKey,
-    program: Program<AmmCore>,
+    program: Program<AmmV3>,
     stateFetcher: StateFetcher,
     positionState?: PositionState
   ) {
@@ -42,24 +42,24 @@ export class Position {
   public async openPosition(
     accounts: OpenPositionAccounts,
     args: OpenPositionArgs
-  ) :Promise<TransactionSignature>{
+  ): Promise<TransactionSignature> {
     const {
       tickLowerIndex,
       tickUpperIndex,
-      wordLowerIndex,
-      wordUpperIndex,
+      tickArrayLowerStartIndex,
+      tickArrayUpperStartIndex,
       amount0Desired,
       amount1Desired,
       amount0Min,
       amount1Min,
     } = args;
-  
-   const tx =  await this.program.methods
+
+    const tx = await this.program.methods
       .openPosition(
         tickLowerIndex,
         tickUpperIndex,
-        wordLowerIndex,
-        wordUpperIndex,
+        tickArrayLowerStartIndex,
+        tickArrayUpperStartIndex,
         amount0Desired,
         amount1Desired,
         amount0Min,
@@ -70,10 +70,12 @@ export class Position {
       .rpc();
 
     this.positionState = await this.load();
-    return tx
+    return tx;
   }
 
-  public async closePosition(accounts: ClosePositionAccounts):Promise<TransactionSignature> {
+  public async closePosition(
+    accounts: ClosePositionAccounts
+  ): Promise<TransactionSignature> {
     return await this.program.methods
       .closePosition()
       .accounts(accounts)
@@ -82,14 +84,16 @@ export class Position {
   }
 
   public async load(): Promise<PositionState> {
-    this.positionState = await this.stateFetcher.getPositionState(this.address);
+    this.positionState = await this.stateFetcher.getPersonalPositionState(
+      this.address
+    );
     return this.positionState;
   }
 
   public async increaseLiquidity(
     accounts: IncreaseLiquidityAccounts,
     args: IncreaseLiquidityArgs
-  ):Promise<TransactionSignature> {
+  ): Promise<TransactionSignature> {
     const { amount0Desired, amount1Desired, amount0Min, amount1Min } = args;
 
     return await this.program.methods
@@ -102,7 +106,7 @@ export class Position {
   public async decreaseLiquidity(
     accounts: DecreaseLiquidityAccounts,
     args: DecreaseLiquidityArgs
-  ):Promise<TransactionSignature> {
+  ): Promise<TransactionSignature> {
     const { liquidity, amount0Min, amount1Min } = args;
 
     return await this.program.methods
@@ -112,28 +116,33 @@ export class Position {
       .rpc();
   }
 
-  public async collectFee(accounts: CollectFeeAccounts, args: CollectFeeArgs) :Promise<TransactionSignature>{
+  public async collectFee(
+    accounts: CollectFeeAccounts,
+    args: CollectFeeArgs
+  ): Promise<TransactionSignature> {
     const { amount0Max, amount1Max } = args;
 
-   return await this.program.methods
+    return await this.program.methods
       .collectFee(amount0Max, amount1Max)
       .accounts(accounts)
       .remainingAccounts([])
       .rpc();
   }
 
-  public async collectRewards(accounts: CollectRewardsAccounts) :Promise<TransactionSignature>{
+  public async collectRewards(
+    accounts: CollectRewardsAccounts
+  ): Promise<TransactionSignature> {
     const {
       nftOwner,
       nftAccount,
       poolState,
       protocolPosition,
       personalPosition,
-      tickLower,
-      tickUpper,
+      tickArrayLower,
+      tickArrayUpper,
       tokenProgram,
     } = accounts;
-   return  await this.program.methods
+    return await this.program.methods
       .collectRewards()
       .accounts({
         nftOwner,
@@ -141,8 +150,8 @@ export class Position {
         personalPosition,
         poolState,
         protocolPosition,
-        tickLower,
-        tickUpper,
+        tickArrayLower,
+        tickArrayUpper,
         tokenProgram,
       })
       .remainingAccounts(accounts.remainings)

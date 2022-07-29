@@ -1,6 +1,6 @@
-export type AmmCore = {
+export type AmmV3 = {
   "version": "0.1.0",
-  "name": "amm_core",
+  "name": "amm_v3",
   "instructions": [
     {
       "name": "createAmmConfig",
@@ -1851,9 +1851,9 @@ export type AmmCore = {
   ]
 };
 
-export const IDL: AmmCore = {
+export const IDL: AmmV3 = {
   "version": "0.1.0",
-  "name": "amm_core",
+  "name": "amm_v3",
   "instructions": [
     {
       "name": "createAmmConfig",

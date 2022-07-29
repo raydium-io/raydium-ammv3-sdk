@@ -4,7 +4,7 @@ import {
   AccountMeta,
 } from "@solana/web3.js";
 import { Program, BN } from "@project-serum/anchor";
-import { AmmCore } from "../anchor/amm_core";
+import { AmmV3 } from "../anchor/amm_v3";
 
 type SwapAccounts = {
   payer: PublicKey;
@@ -28,7 +28,7 @@ type SwapArgs = {
 };
 
 export function swapInstruction(
-  program: Program<AmmCore>,
+  program: Program<AmmV3>,
   args: SwapArgs,
   accounts: SwapAccounts
 ): Promise<TransactionInstruction> {

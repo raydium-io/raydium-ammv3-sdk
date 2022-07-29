@@ -1,6 +1,6 @@
 import { Program } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
-import { AmmCore } from "../anchor/amm_core";
+import { AmmV3 } from "../anchor/amm_v3";
 import {
   PoolState,
   TickState,
@@ -14,9 +14,9 @@ import {
 } from "./states";
 
 export class StateFetcher {
-  private program: Program<AmmCore>;
+  private program: Program<AmmV3>;
 
-  constructor(program: Program<AmmCore>) {
+  constructor(program: Program<AmmV3>) {
     this.program = program;
   }
 
