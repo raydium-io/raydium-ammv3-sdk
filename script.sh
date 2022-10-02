@@ -1,0 +1,1 @@
+ts-node all-in-one-example.ts
