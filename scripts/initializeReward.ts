@@ -20,6 +20,7 @@ import { assert } from "chai";
 import { getTickOffsetInArray, getTickArrayAddressByTick } from "../entities";
 import Decimal from "decimal.js";
 import { BN } from "@project-serum/anchor";
+import { MintLayout, Token } from "@solana/spl-token";
 
 (async () => {
   const admin = Keypair.fromSeed(Uint8Array.from(keypairFile.slice(0, 32)));
@@ -53,6 +54,13 @@ import { BN } from "@project-serum/anchor";
       poolStateData.liquidity.toString()
     );
 
+    let nextRewardIndex = 0;
+    for (let i = 0; i < poolStateData.rewardInfos.length; i++) {
+      if (poolStateData.rewardInfos[i].tokenMint.equals(PublicKey.default)) {
+        nextRewardIndex = i;
+        break;
+      }
+    }
     let instructions: TransactionInstruction[] = [];
     let signers: Signer[] = [admin];
 
@@ -72,16 +80,23 @@ import { BN } from "@project-serum/anchor";
       "endTime:",
       endTime.toString()
     );
+
+    const info = await ctx.connection.getAccountInfo(
+      new PublicKey(param.rewardTokenMint)
+    );
+    if (info === null) {
+      throw new Error("Failed to find mint account");
+    }
+    const mintInfo = MintLayout.decode(info.data);
     const { instructions: ixs, signers: signer } =
       await AmmInstruction.initializeReward(
         ctx,
         admin.publicKey,
         ammPool,
         new PublicKey(param.rewardTokenMint),
-        param.rewardIndex,
         openTime,
         endTime,
-        param.emissionsPerSecond
+        param.emissionsPerSecond * mintInfo.decimals
       );
     instructions.push(...ixs);
     signers.push(...signer);
@@ -97,12 +112,14 @@ import { BN } from "@project-serum/anchor";
     const poolStateDataUpdated = await stateFetcher.getPoolState(
       new PublicKey(param.poolId)
     );
-    const rewardInfo = poolStateDataUpdated.rewardInfos[param.rewardIndex];
+    const rewardInfo = poolStateDataUpdated.rewardInfos[nextRewardIndex];
     assert.equal(rewardInfo.openTime.toString(), openTime.toString());
     assert.equal(rewardInfo.endTime.toString(), endTime.toString());
     assert.equal(
       rewardInfo.emissionsPerSecondX64.toString(),
-      MathUtil.decimalToX64(new Decimal(param.emissionsPerSecond)).toString()
+      MathUtil.decimalToX64(
+        new Decimal(param.emissionsPerSecond * mintInfo.decimals)
+      ).toString()
     );
     assert.equal(rewardInfo.rewardClaimed.toString(), "0");
     assert.equal(rewardInfo.rewardTotalEmissioned.toString(), "0");

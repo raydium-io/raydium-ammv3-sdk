@@ -10,11 +10,14 @@ import { Context, NodeWallet } from "../base";
 import { sendTransaction } from "../utils";
 import { Config, defaultConfirmOptions } from "./config";
 import keypairFile from "./owner-keypair.json";
+import AdminKeypairFile from "./admin-keypair.json";
 import { Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 (async () => {
   const owner = Keypair.fromSeed(Uint8Array.from(keypairFile.slice(0, 32)));
   console.log("owner: ", owner.publicKey.toString());
+  const admin = Keypair.fromSeed(Uint8Array.from(AdminKeypairFile.slice(0, 32)));
+  console.log("admin:", admin.publicKey.toBase58());
   const connection = new Connection(
     Config.url,
     defaultConfirmOptions.commitment
@@ -71,9 +74,21 @@ import { Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
     owner.publicKey
   );
 
+  const adminToken0Account = await token0.createAssociatedTokenAccount(
+    admin.publicKey
+  );
+  const adminToken1Account = await token1.createAssociatedTokenAccount(
+    admin.publicKey
+  );
+
   await token0.mintTo(ownerToken0Account, mintAuthority, [], 100_000_000_000);
   await token1.mintTo(ownerToken1Account, mintAuthority, [], 100_000_000_000);
 
+  await token0.mintTo(adminToken0Account, mintAuthority, [], 100_000_000_000);
+  await token1.mintTo(adminToken1Account, mintAuthority, [], 100_000_000_000);
+
   console.log("ownerToken0Account key: ", ownerToken0Account.toString());
   console.log("ownerToken1Account key: ", ownerToken1Account.toString());
+  console.log("adminToken0Account key: ", adminToken0Account.toString());
+  console.log("adminToken1Account key: ", adminToken1Account.toString());
 })();

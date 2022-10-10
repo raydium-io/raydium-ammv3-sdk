@@ -218,7 +218,6 @@ export class AmmInstruction {
     authority: PublicKey,
     ammPool: AmmPool,
     rewardTokenMint: PublicKey,
-    rewardIndex: number,
     openTime: BN,
     endTime: BN,
     emissionsPerSecond: number
@@ -250,7 +249,6 @@ export class AmmInstruction {
     const ix = await initializeRewardInstruction(
       ctx.program,
       {
-        rewardIndex,
         openTime,
         endTime,
         emissionsPerSecondX64,

@@ -191,96 +191,6 @@ export type AmmV3 = {
       ]
     },
     {
-      "name": "closePersonalPosition",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "poolState",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "personalPosition",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "closeProtocolPosition",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "poolState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tickArrayLowerState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tickArrayUpperState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "protocolPositionState",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "tickLowerIndex",
-          "type": "i32"
-        },
-        {
-          "name": "tickUpperIndex",
-          "type": "i32"
-        },
-        {
-          "name": "tickArrayLowerStartIndex",
-          "type": "i32"
-        },
-        {
-          "name": "tickArrayUpperStartIndex",
-          "type": "i32"
-        }
-      ]
-    },
-    {
-      "name": "closePool",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "poolState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "observationState",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "initializeReward",
       "accounts": [
         {
@@ -335,6 +245,42 @@ export type AmmV3 = {
           "type": {
             "defined": "InitializeRewardParam"
           }
+        }
+      ]
+    },
+    {
+      "name": "collectRemainingRewards",
+      "accounts": [
+        {
+          "name": "rewardFunder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "funderTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "poolState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardTokenVault",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "rewardIndex",
+          "type": "u8"
         }
       ]
     },
@@ -587,7 +533,7 @@ export type AmmV3 = {
         },
         {
           "name": "personalPosition",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -1113,8 +1059,17 @@ export type AmmV3 = {
             "type": "u128"
           },
           {
+            "name": "status",
+            "type": "u8"
+          },
+          {
             "name": "padding",
-            "type": "u64"
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
           },
           {
             "name": "rewardInfos",
@@ -1137,11 +1092,27 @@ export type AmmV3 = {
             }
           },
           {
+            "name": "totalFeesToken0",
+            "type": "u64"
+          },
+          {
+            "name": "totalFeesClaimedToken0",
+            "type": "u64"
+          },
+          {
+            "name": "totalFeesToken1",
+            "type": "u64"
+          },
+          {
+            "name": "totalFeesClaimedToken1",
+            "type": "u64"
+          },
+          {
             "name": "padding1",
             "type": {
               "array": [
                 "u64",
-                32
+                28
               ]
             }
           },
@@ -1266,10 +1237,6 @@ export type AmmV3 = {
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "rewardIndex",
-            "type": "u8"
-          },
           {
             "name": "openTime",
             "type": "u64"
@@ -1419,6 +1386,43 @@ export type AmmV3 = {
                 13
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolStatusBitIndex",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "OpenPositionOrIncreaseLiquidity"
+          },
+          {
+            "name": "DecreaseLiquidity"
+          },
+          {
+            "name": "CollectFee"
+          },
+          {
+            "name": "CollectReward"
+          },
+          {
+            "name": "Swap"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolStatusBitFlag",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Enable"
+          },
+          {
+            "name": "Disable"
           }
         ]
       }
@@ -1755,12 +1759,17 @@ export type AmmV3 = {
         },
         {
           "name": "amount0",
-          "type": "i64",
+          "type": "u64",
           "index": false
         },
         {
           "name": "amount1",
-          "type": "i64",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "zeroForOne",
+          "type": "bool",
           "index": false
         },
         {
@@ -1869,61 +1878,91 @@ export type AmmV3 = {
     },
     {
       "code": 6017,
+      "name": "ForbidBothZeroForSupplyLiquidity",
+      "msg": "Both token amount must not be zero while supply liquidity"
+    },
+    {
+      "code": 6018,
       "name": "TransactionTooOld",
       "msg": "Transaction too old"
     },
     {
-      "code": 6018,
+      "code": 6019,
       "name": "PriceSlippageCheck",
       "msg": "Price slippage check"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "TooLittleOutputReceived",
       "msg": "Too little output received"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "TooMuchInputPaid",
       "msg": "Too much input paid"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "InvaildSwapAmountSpecified",
       "msg": "Swap special amount can not be zero"
     },
     {
-      "code": 6022,
+      "code": 6023,
       "name": "InvalidInputPoolVault",
       "msg": "Input pool vault is invalid"
     },
     {
-      "code": 6023,
+      "code": 6024,
       "name": "TooSmallInputOrOutputAmount",
       "msg": "Swap input or output amount is too small"
     },
     {
-      "code": 6024,
+      "code": 6025,
       "name": "InvalidRewardIndex",
       "msg": "Invalid reward index"
     },
     {
-      "code": 6025,
+      "code": 6026,
+      "name": "FullRewardInfo",
+      "msg": "The init reward token reach to the max"
+    },
+    {
+      "code": 6027,
+      "name": "RewardTokenAlreadyInUse",
+      "msg": "The init reward token already in use"
+    },
+    {
+      "code": 6028,
+      "name": "ExceptPoolVaultMint",
+      "msg": "The reward tokens must contain one of pool vault mint except the last reward"
+    },
+    {
+      "code": 6029,
       "name": "InvalidRewardInitParam",
       "msg": "Invalid reward init param"
     },
     {
-      "code": 6026,
+      "code": 6030,
       "name": "InvalidRewardDesiredAmount",
       "msg": "Invalid collect reward desired amount"
     },
     {
-      "code": 6027,
+      "code": 6031,
       "name": "InvalidRewardInputAccountNumber",
       "msg": "Invalid collect reward input account number"
     },
     {
-      "code": 6028,
+      "code": 6032,
+      "name": "InvalidRewardPeriod",
+      "msg": "Invalid reward period"
+    },
+    {
+      "code": 6033,
+      "name": "NotApproveUpdateRewardEmissiones",
+      "msg": "Modification of emissiones is allowed within 72 hours from the end of the previous cycle"
+    },
+    {
+      "code": 6034,
       "name": "UnInitializedRewardInfo",
       "msg": "uninitialized reward info"
     }
@@ -2123,96 +2162,6 @@ export const IDL: AmmV3 = {
       ]
     },
     {
-      "name": "closePersonalPosition",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "poolState",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "personalPosition",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "closeProtocolPosition",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "poolState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tickArrayLowerState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tickArrayUpperState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "protocolPositionState",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": [
-        {
-          "name": "tickLowerIndex",
-          "type": "i32"
-        },
-        {
-          "name": "tickUpperIndex",
-          "type": "i32"
-        },
-        {
-          "name": "tickArrayLowerStartIndex",
-          "type": "i32"
-        },
-        {
-          "name": "tickArrayUpperStartIndex",
-          "type": "i32"
-        }
-      ]
-    },
-    {
-      "name": "closePool",
-      "accounts": [
-        {
-          "name": "owner",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
-          "name": "poolState",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "observationState",
-          "isMut": true,
-          "isSigner": false
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "initializeReward",
       "accounts": [
         {
@@ -2267,6 +2216,42 @@ export const IDL: AmmV3 = {
           "type": {
             "defined": "InitializeRewardParam"
           }
+        }
+      ]
+    },
+    {
+      "name": "collectRemainingRewards",
+      "accounts": [
+        {
+          "name": "rewardFunder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "funderTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "poolState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardTokenVault",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "rewardIndex",
+          "type": "u8"
         }
       ]
     },
@@ -2519,7 +2504,7 @@ export const IDL: AmmV3 = {
         },
         {
           "name": "personalPosition",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
@@ -3045,8 +3030,17 @@ export const IDL: AmmV3 = {
             "type": "u128"
           },
           {
+            "name": "status",
+            "type": "u8"
+          },
+          {
             "name": "padding",
-            "type": "u64"
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
           },
           {
             "name": "rewardInfos",
@@ -3069,11 +3063,27 @@ export const IDL: AmmV3 = {
             }
           },
           {
+            "name": "totalFeesToken0",
+            "type": "u64"
+          },
+          {
+            "name": "totalFeesClaimedToken0",
+            "type": "u64"
+          },
+          {
+            "name": "totalFeesToken1",
+            "type": "u64"
+          },
+          {
+            "name": "totalFeesClaimedToken1",
+            "type": "u64"
+          },
+          {
             "name": "padding1",
             "type": {
               "array": [
                 "u64",
-                32
+                28
               ]
             }
           },
@@ -3198,10 +3208,6 @@ export const IDL: AmmV3 = {
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "rewardIndex",
-            "type": "u8"
-          },
           {
             "name": "openTime",
             "type": "u64"
@@ -3351,6 +3357,43 @@ export const IDL: AmmV3 = {
                 13
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolStatusBitIndex",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "OpenPositionOrIncreaseLiquidity"
+          },
+          {
+            "name": "DecreaseLiquidity"
+          },
+          {
+            "name": "CollectFee"
+          },
+          {
+            "name": "CollectReward"
+          },
+          {
+            "name": "Swap"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolStatusBitFlag",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Enable"
+          },
+          {
+            "name": "Disable"
           }
         ]
       }
@@ -3687,12 +3730,17 @@ export const IDL: AmmV3 = {
         },
         {
           "name": "amount0",
-          "type": "i64",
+          "type": "u64",
           "index": false
         },
         {
           "name": "amount1",
-          "type": "i64",
+          "type": "u64",
+          "index": false
+        },
+        {
+          "name": "zeroForOne",
+          "type": "bool",
           "index": false
         },
         {
@@ -3801,61 +3849,91 @@ export const IDL: AmmV3 = {
     },
     {
       "code": 6017,
+      "name": "ForbidBothZeroForSupplyLiquidity",
+      "msg": "Both token amount must not be zero while supply liquidity"
+    },
+    {
+      "code": 6018,
       "name": "TransactionTooOld",
       "msg": "Transaction too old"
     },
     {
-      "code": 6018,
+      "code": 6019,
       "name": "PriceSlippageCheck",
       "msg": "Price slippage check"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "TooLittleOutputReceived",
       "msg": "Too little output received"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "TooMuchInputPaid",
       "msg": "Too much input paid"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "InvaildSwapAmountSpecified",
       "msg": "Swap special amount can not be zero"
     },
     {
-      "code": 6022,
+      "code": 6023,
       "name": "InvalidInputPoolVault",
       "msg": "Input pool vault is invalid"
     },
     {
-      "code": 6023,
+      "code": 6024,
       "name": "TooSmallInputOrOutputAmount",
       "msg": "Swap input or output amount is too small"
     },
     {
-      "code": 6024,
+      "code": 6025,
       "name": "InvalidRewardIndex",
       "msg": "Invalid reward index"
     },
     {
-      "code": 6025,
+      "code": 6026,
+      "name": "FullRewardInfo",
+      "msg": "The init reward token reach to the max"
+    },
+    {
+      "code": 6027,
+      "name": "RewardTokenAlreadyInUse",
+      "msg": "The init reward token already in use"
+    },
+    {
+      "code": 6028,
+      "name": "ExceptPoolVaultMint",
+      "msg": "The reward tokens must contain one of pool vault mint except the last reward"
+    },
+    {
+      "code": 6029,
       "name": "InvalidRewardInitParam",
       "msg": "Invalid reward init param"
     },
     {
-      "code": 6026,
+      "code": 6030,
       "name": "InvalidRewardDesiredAmount",
       "msg": "Invalid collect reward desired amount"
     },
     {
-      "code": 6027,
+      "code": 6031,
       "name": "InvalidRewardInputAccountNumber",
       "msg": "Invalid collect reward input account number"
     },
     {
-      "code": 6028,
+      "code": 6032,
+      "name": "InvalidRewardPeriod",
+      "msg": "Invalid reward period"
+    },
+    {
+      "code": 6033,
+      "name": "NotApproveUpdateRewardEmissiones",
+      "msg": "Modification of emissiones is allowed within 72 hours from the end of the previous cycle"
+    },
+    {
+      "code": 6034,
       "name": "UnInitializedRewardInfo",
       "msg": "uninitialized reward info"
     }

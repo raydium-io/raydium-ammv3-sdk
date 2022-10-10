@@ -6,7 +6,6 @@ import { AmmV3 } from "../../anchor/amm_v3";
 export function initializeRewardInstruction(
   program: Program<AmmV3>,
   args: {
-    rewardIndex: number;
     openTime: BN;
     endTime: BN;
     emissionsPerSecondX64: BN;
