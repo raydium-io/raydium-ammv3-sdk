@@ -287,7 +287,7 @@ function getRewardGrowthInside(
     } else if (tickCurrentIndex < tickUpperState.tick) {
       rewardGrowthsAbove = tickUpperState.rewardGrowthsOutsideX64[i];
     } else {
-      rewardGrowthsAbove = rewardInfos[i].rewardGrowthGlobalX64.add(
+      rewardGrowthsAbove = rewardInfos[i].rewardGrowthGlobalX64.sub(
         tickUpperState.rewardGrowthsOutsideX64[i]
       );
     }
