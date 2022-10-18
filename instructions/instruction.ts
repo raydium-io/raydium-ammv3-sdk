@@ -125,7 +125,8 @@ export class AmmInstruction {
     index: number,
     tickSpacing: number,
     tradeFeeRate: number,
-    protocolFeeRate: number
+    protocolFeeRate: number,
+    fundFeeRate: number
   ): Promise<[PublicKey, TransactionInstruction]> {
     const [address, _] = await getAmmConfigAddress(
       index,
@@ -140,6 +141,7 @@ export class AmmInstruction {
           tickSpacing,
           tradeFeeRate: tradeFeeRate,
           protocolFeeRate,
+          fundFeeRate,
         },
         {
           owner: authority,
@@ -159,14 +161,19 @@ export class AmmInstruction {
     return await updateAmmConfigInstruction(
       ctx.program,
       {
-        newOwner,
-        tradeFeeRate: 0,
-        protocolFeeRate: 0,
-        flag: 0,
+        param: 4,
+        vaule: 0,
       },
       {
         owner: authority,
         ammConfig,
+        remainings: [
+          {
+            isSigner: false,
+            isWritable: false,
+            pubkey: newOwner,
+          },
+        ],
       }
     );
   }
@@ -180,14 +187,13 @@ export class AmmInstruction {
     return await updateAmmConfigInstruction(
       ctx.program,
       {
-        newOwner: PublicKey.default,
-        tradeFeeRate: tradeFeeRate,
-        protocolFeeRate: 0,
-        flag: 1,
+        param: 0,
+        vaule: tradeFeeRate,
       },
       {
         owner: authority,
         ammConfig,
+        remainings: [],
       }
     );
   }
@@ -201,14 +207,13 @@ export class AmmInstruction {
     return await updateAmmConfigInstruction(
       ctx.program,
       {
-        newOwner: PublicKey.default,
-        tradeFeeRate: 0,
-        protocolFeeRate: protocolFeeRate,
-        flag: 2,
+        param: 1,
+        vaule: protocolFeeRate,
       },
       {
         owner: authority,
         ammConfig,
+        remainings: [],
       }
     );
   }
@@ -1429,7 +1434,6 @@ export class AmmInstruction {
         tokenProgram: TOKEN_PROGRAM_ID,
         tickArray,
         remainings: [...remainingAccounts],
-
       }
     );
   }

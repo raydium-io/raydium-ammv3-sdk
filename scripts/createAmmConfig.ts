@@ -30,7 +30,8 @@ import keypairFile from "./admin-keypair.json";
       param.index,
       param.tickSpacing,
       param.tradeFeeRate,
-      param.protocolFeeRate
+      param.protocolFeeRate,
+      param.fundFeeRate,
     );
     if (await accountExist(connection, address)) {
       console.log(

@@ -9,6 +9,7 @@ export function createAmmConfigInstruction(
     tickSpacing: number;
     tradeFeeRate: number;
     protocolFeeRate: number;
+    fundFeeRate: number;
   },
   accounts: {
     owner: PublicKey;
@@ -16,9 +17,16 @@ export function createAmmConfigInstruction(
     systemProgram: PublicKey;
   }
 ): Promise<TransactionInstruction> {
-  const { index, tickSpacing, tradeFeeRate, protocolFeeRate } = args;
+  const { index, tickSpacing, tradeFeeRate, protocolFeeRate, fundFeeRate } =
+    args;
   return program.methods
-    .createAmmConfig(index, tickSpacing, tradeFeeRate, protocolFeeRate)
+    .createAmmConfig(
+      index,
+      tickSpacing,
+      tradeFeeRate,
+      protocolFeeRate,
+      fundFeeRate
+    )
     .accounts(accounts)
     .instruction();
 }

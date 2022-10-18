@@ -18,12 +18,14 @@ export const Config = {
       tickSpacing: 10,
       tradeFeeRate: 100,
       protocolFeeRate: 12000,
+      fundFeeRate:0,
     },
     {
       index: 1,
       tickSpacing: 60,
       tradeFeeRate: 2500,
       protocolFeeRate: 12000,
+      fundFeeRate:0,
     },
   ],
   "create-pool": [

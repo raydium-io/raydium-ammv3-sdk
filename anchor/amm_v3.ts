@@ -37,6 +37,10 @@ export type AmmV3 = {
         {
           "name": "protocolFeeRate",
           "type": "u32"
+        },
+        {
+          "name": "fundFeeRate",
+          "type": "u32"
         }
       ]
     },
@@ -56,20 +60,12 @@ export type AmmV3 = {
       ],
       "args": [
         {
-          "name": "newOwner",
-          "type": "publicKey"
-        },
-        {
-          "name": "tradeFeeRate",
-          "type": "u32"
-        },
-        {
-          "name": "protocolFeeRate",
-          "type": "u32"
-        },
-        {
-          "name": "flag",
+          "name": "param",
           "type": "u8"
+        },
+        {
+          "name": "value",
+          "type": "u32"
         }
       ]
     },
@@ -344,6 +340,66 @@ export type AmmV3 = {
         {
           "name": "poolState",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ammConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVault0",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVault1",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "recipientTokenAccount0",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "recipientTokenAccount1",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount0Requested",
+          "type": "u64"
+        },
+        {
+          "name": "amount1Requested",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "collectFundFee",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "poolState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ammConfig",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -842,11 +898,23 @@ export type AmmV3 = {
             "type": "u16"
           },
           {
+            "name": "fundFeeRate",
+            "type": "u32"
+          },
+          {
+            "name": "paddingU32",
+            "type": "u32"
+          },
+          {
+            "name": "fundOwner",
+            "type": "publicKey"
+          },
+          {
             "name": "padding",
             "type": {
               "array": [
                 "u64",
-                8
+                3
               ]
             }
           }
@@ -1108,11 +1176,19 @@ export type AmmV3 = {
             "type": "u64"
           },
           {
+            "name": "fundFeesToken0",
+            "type": "u64"
+          },
+          {
+            "name": "fundFeesToken1",
+            "type": "u64"
+          },
+          {
             "name": "padding1",
             "type": {
               "array": [
                 "u64",
-                28
+                26
               ]
             }
           },
@@ -1476,6 +1552,16 @@ export type AmmV3 = {
           "name": "tickSpacing",
           "type": "u16",
           "index": false
+        },
+        {
+          "name": "fundFeeRate",
+          "type": "u32",
+          "index": false
+        },
+        {
+          "name": "fundOwner",
+          "type": "publicKey",
+          "index": false
         }
       ]
     },
@@ -1495,6 +1581,16 @@ export type AmmV3 = {
         {
           "name": "tradeFeeRate",
           "type": "u32",
+          "index": false
+        },
+        {
+          "name": "fundFeeRate",
+          "type": "u32",
+          "index": false
+        },
+        {
+          "name": "fundOwner",
+          "type": "publicKey",
           "index": false
         }
       ]
@@ -2008,6 +2104,10 @@ export const IDL: AmmV3 = {
         {
           "name": "protocolFeeRate",
           "type": "u32"
+        },
+        {
+          "name": "fundFeeRate",
+          "type": "u32"
         }
       ]
     },
@@ -2027,20 +2127,12 @@ export const IDL: AmmV3 = {
       ],
       "args": [
         {
-          "name": "newOwner",
-          "type": "publicKey"
-        },
-        {
-          "name": "tradeFeeRate",
-          "type": "u32"
-        },
-        {
-          "name": "protocolFeeRate",
-          "type": "u32"
-        },
-        {
-          "name": "flag",
+          "name": "param",
           "type": "u8"
+        },
+        {
+          "name": "value",
+          "type": "u32"
         }
       ]
     },
@@ -2315,6 +2407,66 @@ export const IDL: AmmV3 = {
         {
           "name": "poolState",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ammConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVault0",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVault1",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "recipientTokenAccount0",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "recipientTokenAccount1",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount0Requested",
+          "type": "u64"
+        },
+        {
+          "name": "amount1Requested",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "collectFundFee",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "poolState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "ammConfig",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -2813,11 +2965,23 @@ export const IDL: AmmV3 = {
             "type": "u16"
           },
           {
+            "name": "fundFeeRate",
+            "type": "u32"
+          },
+          {
+            "name": "paddingU32",
+            "type": "u32"
+          },
+          {
+            "name": "fundOwner",
+            "type": "publicKey"
+          },
+          {
             "name": "padding",
             "type": {
               "array": [
                 "u64",
-                8
+                3
               ]
             }
           }
@@ -3079,11 +3243,19 @@ export const IDL: AmmV3 = {
             "type": "u64"
           },
           {
+            "name": "fundFeesToken0",
+            "type": "u64"
+          },
+          {
+            "name": "fundFeesToken1",
+            "type": "u64"
+          },
+          {
             "name": "padding1",
             "type": {
               "array": [
                 "u64",
-                28
+                26
               ]
             }
           },
@@ -3447,6 +3619,16 @@ export const IDL: AmmV3 = {
           "name": "tickSpacing",
           "type": "u16",
           "index": false
+        },
+        {
+          "name": "fundFeeRate",
+          "type": "u32",
+          "index": false
+        },
+        {
+          "name": "fundOwner",
+          "type": "publicKey",
+          "index": false
         }
       ]
     },
@@ -3466,6 +3648,16 @@ export const IDL: AmmV3 = {
         {
           "name": "tradeFeeRate",
           "type": "u32",
+          "index": false
+        },
+        {
+          "name": "fundFeeRate",
+          "type": "u32",
+          "index": false
+        },
+        {
+          "name": "fundOwner",
+          "type": "publicKey",
           "index": false
         }
       ]

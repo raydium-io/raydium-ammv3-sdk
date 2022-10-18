@@ -11,7 +11,6 @@ import { Context, NodeWallet } from "../base";
 import { StateFetcher } from "../states";
 import { sendTransaction } from "../utils";
 import { AmmInstruction } from "../instructions";
-import { fetchAllPositionsByOwner } from "../position";
 import { Config, defaultConfirmOptions } from "./config";
 import { AmmPool } from "../pool";
 import keypairFile from "./owner-keypair.json";

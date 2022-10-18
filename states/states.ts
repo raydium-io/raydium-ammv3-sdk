@@ -10,11 +10,12 @@ export type AmmConfig = {
   protocolFeeRate: number;
   tradeFeeRate: number;
   tickSpacing: number;
+  fundFeeRate: number;
   padding: BN[];
 };
 
 export type ObservationState = {
-  poolId:PublicKey;
+  poolId: PublicKey;
   initialized: boolean;
   observations: Observation[];
   padding: BN[];
@@ -51,6 +52,17 @@ export type PoolState = {
   tickArrayBitmap: BN[];
   mintDecimals0: number;
   mintDecimals1: number;
+  swapInAmountToken0: BN;
+  swapOutAmountToken1: BN;
+  swapInAmountToken1: BN;
+  swapOutAmountToken0: BN;
+  status: number;
+  totalFeesToken0: BN;
+  totalFeesClaimedToken0: BN;
+  totalFeesToken1: BN;
+  totalFeesClaimedToken1: BN;
+  fundFeesToken0: BN;
+  fundFeesToken1: BN;
 };
 
 export type RewardInfo = {

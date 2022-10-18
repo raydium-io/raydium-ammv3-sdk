@@ -11,13 +11,11 @@ import { Context, NodeWallet } from "../base";
 import { StateFetcher } from "../states";
 import { sendTransaction, getBlockTimestamp } from "../utils";
 import { AmmInstruction } from "../instructions";
-import { fetchAllPositionsByOwner } from "../position";
 import { Config, defaultConfirmOptions } from "./config";
 import { AmmPool } from "../pool";
 import keypairFile from "./admin-keypair.json";
-import { MathUtil, SqrtPriceMath } from "../math";
+import { MathUtil } from "../math";
 import { assert } from "chai";
-import { getTickOffsetInArray, getTickArrayAddressByTick } from "../entities";
 import Decimal from "decimal.js";
 import { BN } from "@project-serum/anchor";
 import { MintLayout, Token } from "@solana/spl-token";
@@ -96,7 +94,7 @@ import { MintLayout, Token } from "@solana/spl-token";
         new PublicKey(param.rewardTokenMint),
         openTime,
         endTime,
-        param.emissionsPerSecond * mintInfo.decimals
+        param.emissionsPerSecond * Math.pow(10, mintInfo.decimals)
       );
     instructions.push(...ixs);
     signers.push(...signer);
@@ -118,7 +116,7 @@ import { MintLayout, Token } from "@solana/spl-token";
     assert.equal(
       rewardInfo.emissionsPerSecondX64.toString(),
       MathUtil.decimalToX64(
-        new Decimal(param.emissionsPerSecond * mintInfo.decimals)
+        new Decimal(param.emissionsPerSecond * Math.pow(10, mintInfo.decimals))
       ).toString()
     );
     assert.equal(rewardInfo.rewardClaimed.toString(), "0");

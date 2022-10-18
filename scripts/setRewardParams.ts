@@ -14,7 +14,7 @@ import { AmmInstruction } from "../instructions";
 import { Config, defaultConfirmOptions } from "./config";
 import { AmmPool } from "../pool";
 import keypairFile from "./admin-keypair.json";
-import { MathUtil, SqrtPriceMath } from "../math";
+import { MathUtil } from "../math";
 import { assert } from "chai";
 import Decimal from "decimal.js";
 
@@ -52,15 +52,16 @@ import Decimal from "decimal.js";
     let instructions: TransactionInstruction[] = [];
     let signers: Signer[] = [admin];
 
-    const { instructions: ixs, signers: signer } = await AmmInstruction.setRewardParams(
-      ctx,
-      admin.publicKey,
-      ammPool,
-      param.rewardIndex,
-      param.emissionsPerSecond,
-      param.openTime,
-      param.endTime
-    );
+    const { instructions: ixs, signers: signer } =
+      await AmmInstruction.setRewardParams(
+        ctx,
+        admin.publicKey,
+        ammPool,
+        param.rewardIndex,
+        param.emissionsPerSecond,
+        param.openTime,
+        param.endTime
+      );
     instructions.push(...ixs);
     signers.push(...signer);
 
