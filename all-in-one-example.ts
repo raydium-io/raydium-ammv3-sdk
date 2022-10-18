@@ -1,10 +1,7 @@
 import { web3, BN } from "@project-serum/anchor";
 import { Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { AmmPool } from "./pool";
-import {
-  LiquidityMath,
-  SqrtPriceMath,
-} from "./math";
+import { LiquidityMath, SqrtPriceMath } from "./math";
 import { StateFetcher, OBSERVATION_STATE_LEN } from "./states";
 import { accountExist, getAmmConfigAddress, sendTransaction } from "./utils";
 import { AmmInstruction, RouterPoolParam } from "./instructions";
@@ -77,7 +74,8 @@ export async function main() {
     0,
     10,
     1000,
-    25000
+    25000,
+    0
   );
 
   // Second, create a pool
@@ -93,12 +91,7 @@ export async function main() {
   );
   console.log("createPool tx:", poolTx);
 
-
-  const ammPoolA = new AmmPool(
-    ctx,
-    poolAAddress,
-    stateFetcher
-  );
+  const ammPoolA = new AmmPool(ctx, poolAAddress, stateFetcher);
 
   await ammPoolA.loadPoolState();
 
@@ -207,11 +200,7 @@ export async function main() {
     6
   );
 
-  const ammPoolB = new AmmPool(
-    ctx,
-    poolBAddress,
-    stateFetcher
-  );
+  const ammPoolB = new AmmPool(ctx, poolBAddress, stateFetcher);
 
   await ammPoolB.loadPoolState();
 
@@ -338,6 +327,7 @@ async function createAmmConfig(
   tickSpacing: number,
   globalFeeRate: number,
   protocolFeeRate: number,
+  fundFeeRate: number,
   confirmOptions?: ConfirmOptions
 ): Promise<PublicKey> {
   // Only for test, you needn't do it
@@ -352,7 +342,8 @@ async function createAmmConfig(
     index,
     tickSpacing,
     globalFeeRate,
-    protocolFeeRate
+    protocolFeeRate,
+    fundFeeRate
   );
   const tx = await sendTransaction(
     ctx.provider.connection,
