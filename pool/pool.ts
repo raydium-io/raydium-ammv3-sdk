@@ -201,7 +201,11 @@ export class AmmPool {
     inputAmount: BN,
     sqrtPriceLimitX64?: BN,
     reload?: boolean
-  ): Promise<[BN, AccountMeta[]]> {
+  ): Promise<{
+    outputAmount: BN;
+    inputFeeAmount: BN;
+    remainAccounts: AccountMeta[];
+  }> {
     if (!this.isContain(inputTokenMint)) {
       throw new Error("token is not in pool");
     }
@@ -221,6 +225,7 @@ export class AmmPool {
     allNeededAccounts.push(nextAccountMeta);
     const {
       amountCalculated: outputAmount,
+      feeAmount: inputFeeAmount,
       sqrtPriceX64: updatedSqrtPriceX64,
       liquidity: updatedLiquidity,
       tickCurrent: updatedTick,
@@ -241,7 +246,11 @@ export class AmmPool {
     this.poolState.sqrtPriceX64 = updatedSqrtPriceX64;
     this.poolState.tickCurrent = updatedTick;
     this.poolState.liquidity = updatedLiquidity;
-    return [outputAmount.mul(NEGATIVE_ONE), allNeededAccounts];
+    return {
+      outputAmount: outputAmount.mul(NEGATIVE_ONE),
+      inputFeeAmount,
+      remainAccounts: allNeededAccounts,
+    };
   }
 
   /**
@@ -251,12 +260,16 @@ export class AmmPool {
    * @param reload if true, reload pool state
    * @returns input token amount and the latest pool states
    */
-  public async getInputAmountAndAccounts(
+  public async getInputAmountAndRemainAccounts(
     outputTokenMint: PublicKey,
     outputAmount: BN,
     sqrtPriceLimitX64?: BN,
     reload?: boolean
-  ): Promise<[BN, AccountMeta[]]> {
+  ): Promise<{
+    inputAmount: BN;
+    inputFeeAmount: BN;
+    remainAccounts: AccountMeta[];
+  }> {
     if (!this.isContain(outputTokenMint)) {
       throw new Error("token is not in pool");
     }
@@ -276,6 +289,7 @@ export class AmmPool {
     allNeededAccounts.push(nextAccountMeta);
     const {
       amountCalculated: inputAmount,
+      feeAmount: inputFeeAmount,
       sqrtPriceX64: updatedSqrtPriceX64,
       liquidity,
       tickCurrent,
@@ -296,7 +310,11 @@ export class AmmPool {
     this.poolState.sqrtPriceX64 = updatedSqrtPriceX64;
     this.poolState.tickCurrent = tickCurrent;
     this.poolState.liquidity = liquidity;
-    return [inputAmount, allNeededAccounts];
+    return {
+      inputAmount,
+      inputFeeAmount,
+      remainAccounts: allNeededAccounts,
+    };
   }
 
   private async getFirstInitializedTickArray(

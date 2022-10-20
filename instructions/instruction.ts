@@ -1056,13 +1056,15 @@ export class AmmInstruction {
         ammPool.poolState.mintDecimals1
       );
     }
-    const [expectedAmountOut, remainingAccounts] =
-      await ammPool.getOutputAmountAndRemainAccounts(
-        inputTokenMint,
-        amountIn,
-        sqrtPriceLimitX64,
-        true
-      );
+    const {
+      outputAmount: expectedAmountOut,
+      remainAccounts: remainingAccounts,
+    } = await ammPool.getOutputAmountAndRemainAccounts(
+      inputTokenMint,
+      amountIn,
+      sqrtPriceLimitX64,
+      true
+    );
     let amountOutMin = new BN(0);
     if (amountOutSlippage != undefined) {
       amountOutMin = expectedAmountOut.muln(1 - amountOutSlippage);
@@ -1178,8 +1180,8 @@ export class AmmInstruction {
         ammPool.poolState.mintDecimals1
       );
     }
-    const [expectedAmountIn, remainingAccounts] =
-      await ammPool.getInputAmountAndAccounts(
+    const { inputAmount: expectedAmountIn, remainAccounts: remainingAccounts } =
+      await ammPool.getInputAmountAndRemainAccounts(
         outputTokenMint,
         amountOut,
         sqrtPriceLimitX64,
@@ -1461,11 +1463,13 @@ export class AmmInstruction {
       outputVault = param.ammPool.poolState.tokenVault0;
       outputTokenMint = param.ammPool.poolState.tokenMint0;
     }
-    const [expectedAmountOut, remainingAccounts] =
-      await param.ammPool.getOutputAmountAndRemainAccounts(
-        param.inputTokenMint,
-        inputAmount
-      );
+    const {
+      outputAmount: expectedAmountOut,
+      remainAccounts: remainingAccounts,
+    } = await param.ammPool.getOutputAmountAndRemainAccounts(
+      param.inputTokenMint,
+      inputAmount
+    );
     if (remainingAccounts.length == 0) {
       throw new Error("must has one tickArray");
     }

@@ -58,6 +58,7 @@ export abstract class SwapMath {
     sqrtPriceLimitX64?: BN
   ): Promise<{
     amountCalculated: BN;
+    feeAmount: BN;
     sqrtPriceX64: BN;
     liquidity: BN;
     tickCurrent: number;
@@ -97,6 +98,7 @@ export abstract class SwapMath {
       tick: currentTick,
       accounts: [] as AccountMeta[],
       liquidity: liquidity,
+      feeAmount: new BN(0),
     };
     let loopCount = 0;
     // loop across ticks until input liquidity is consumed, or the limit price is reached
@@ -154,7 +156,7 @@ export abstract class SwapMath {
           state.amountSpecifiedRemaining,
           fee
         );
-
+      state.feeAmount = state.feeAmount.add(step.feeAmount);
       if (baseInput) {
         // subtract the input amount. The loop exits if remaining amount becomes 0
         state.amountSpecifiedRemaining = state.amountSpecifiedRemaining.sub(
@@ -187,6 +189,7 @@ export abstract class SwapMath {
     }
     return {
       amountCalculated: state.amountCalculated,
+      feeAmount: state.feeAmount,
       sqrtPriceX64: state.sqrtPriceX64,
       liquidity: state.liquidity,
       tickCurrent: state.tick,
