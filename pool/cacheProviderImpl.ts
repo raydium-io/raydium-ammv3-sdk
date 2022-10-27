@@ -210,9 +210,6 @@ export class CacheDataProviderImpl implements CacheDataProvider {
     }
     let nextInitializedTick: Tick;
     if (zeroForOne) {
-      if ((tickIndex - startIndex) % tickSpacing == 0) {
-        tickPositionInArray = tickPositionInArray - 1;
-      }
       while (tickPositionInArray >= 0) {
         const tickInArray = cachedTickArray.ticks[tickPositionInArray];
         if (tickInArray.liquidityGross.gtn(0)) {
