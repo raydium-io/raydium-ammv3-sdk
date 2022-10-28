@@ -1,5 +1,5 @@
 import { BN } from "@project-serum/anchor";
-import { ONE, ZERO } from "./constants";
+import { ONE, Q128, ZERO } from "./constants";
 import Decimal from "decimal.js";
 
 export abstract class MathUtil {
@@ -40,5 +40,9 @@ export abstract class MathUtil {
 
   public static decimalToX64(num: Decimal): BN {
     return new BN(num.mul(Decimal.pow(2, 64)).floor().toFixed());
+  }
+
+  public static wrappingSubU128(n0: BN, n1: BN): BN {
+    return n0.add(Q128).sub(n1).mod(Q128);
   }
 }

@@ -209,10 +209,10 @@ export async function GetPositionRewards(
     let rewardGrowthInside = rewardGrowthsInside[i];
     let currRewardInfo = positionState.rewardInfos[i];
 
-    let rewardGrowthDelta = rewardGrowthInside.sub(
+    let rewardGrowthDelta = MathUtil.wrappingSubU128(
+      rewardGrowthInside,
       currRewardInfo.growthInsideLastX64
     );
-    console.log("i:", i, "rewardGrowthDelta:", rewardGrowthDelta.toString(),"rewardGrowthInside:",rewardGrowthInside.toString());
     let amountOwedDelta = MathUtil.mulDivFloor(
       rewardGrowthDelta,
       positionState.liquidity,
@@ -241,14 +241,20 @@ export async function GetPositionFees(
   );
 
   let feeGrowthdelta0 = MathUtil.mulDivFloor(
-    feeGrowthInside0X64.sub(positionState.feeGrowthInside0LastX64),
+    MathUtil.wrappingSubU128(
+      feeGrowthInside0X64,
+      positionState.feeGrowthInside0LastX64
+    ),
     positionState.liquidity,
     Q64
   );
   const tokenFeeAmount0 = positionState.tokenFeesOwed0.add(feeGrowthdelta0);
 
   let feeGrowthdelta1 = MathUtil.mulDivFloor(
-    feeGrowthInside1X64.sub(positionState.feeGrowthInside1LastX64),
+    MathUtil.wrappingSubU128(
+      feeGrowthInside1X64,
+      positionState.feeGrowthInside1LastX64
+    ),
     positionState.liquidity,
     Q64
   );
@@ -293,9 +299,13 @@ function getRewardGrowthInside(
     }
 
     rewardGrowthsInside.push(
-      rewardInfos[i].rewardGrowthGlobalX64
-        .sub(rewardGrowthsBelow)
-        .sub(rewardGrowthsAbove)
+      MathUtil.wrappingSubU128(
+        MathUtil.wrappingSubU128(
+          rewardInfos[i].rewardGrowthGlobalX64,
+          rewardGrowthsBelow
+        ),
+        rewardGrowthsAbove
+      )
     );
   }
 
@@ -338,11 +348,13 @@ function getfeeGrowthInside(
     );
   }
 
-  const feeGrowthInside0X64 = poolState.feeGrowthGlobal0X64
-    .sub(feeGrowthBelow0X64)
-    .sub(feeGrowthAbove0X64);
-  const feeGrowthInside1X64 = poolState.feeGrowthGlobal1X64
-    .sub(feeGrowthBelow1X64)
-    .sub(feeGrowthAbove1X64);
+  const feeGrowthInside0X64 = MathUtil.wrappingSubU128(
+    MathUtil.wrappingSubU128(poolState.feeGrowthGlobal0X64, feeGrowthBelow0X64),
+    feeGrowthAbove0X64
+  );
+  const feeGrowthInside1X64 = MathUtil.wrappingSubU128(
+    MathUtil.wrappingSubU128(poolState.feeGrowthGlobal1X64, feeGrowthBelow1X64),
+    feeGrowthAbove1X64
+  );
   return { feeGrowthInside0X64, feeGrowthInside1X64 };
 }
