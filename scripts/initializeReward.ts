@@ -9,7 +9,11 @@ import {
 } from "@solana/web3.js";
 import { Context, NodeWallet } from "../base";
 import { StateFetcher } from "../states";
-import { sendTransaction, getBlockTimestamp } from "../utils";
+import {
+  sendTransaction,
+  getBlockTimestamp,
+  getOperationAddress,
+} from "../utils";
 import { AmmInstruction } from "../instructions";
 import { Config, defaultConfirmOptions } from "./config";
 import { AmmPool } from "../pool";
@@ -86,12 +90,16 @@ import { MintLayout, Token } from "@solana/spl-token";
       throw new Error("Failed to find mint account");
     }
     const mintInfo = MintLayout.decode(info.data);
+    const [operationAccount, _] = await getOperationAddress(
+      ctx.program.programId
+    );
     const { instructions: ixs, signers: signer } =
       await AmmInstruction.initializeReward(
         ctx,
         admin.publicKey,
         ammPool,
         new PublicKey(param.rewardTokenMint),
+        operationAccount,
         openTime,
         endTime,
         param.emissionsPerSecond * Math.pow(10, mintInfo.decimals)

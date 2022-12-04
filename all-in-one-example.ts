@@ -50,7 +50,7 @@ export async function main() {
   const owner = localWallet();
   console.log("owner: ", owner.publicKey.toString());
   const programId = new PublicKey(
-    "DEVeYuwvQnhz1roDpSwqmnWtoKTeYftM7Qt7gFPMF3tj"
+    "devi51mZmdwUJGU9hjN27vEz64Gps7uUefqxg27EAtH"
   );
   const url = "https://api.devnet.solana.com";
   // const url = "http://127.0.0.1:8899";

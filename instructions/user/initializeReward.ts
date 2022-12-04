@@ -16,6 +16,7 @@ export function initializeRewardInstruction(
     ammConfig: PublicKey;
     poolState: PublicKey;
     rewardTokenMint: PublicKey;
+    operationState:PublicKey,
     rewardTokenVault: PublicKey;
     tokenProgram: PublicKey;
     systemProgram: PublicKey;

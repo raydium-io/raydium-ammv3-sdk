@@ -136,6 +136,59 @@
       ]
     },
     {
+      "name": "createOperationAccount",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "operationState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "updateOperationAccount",
+      "accounts": [
+        {
+          "name": "owner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "operationState",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "param",
+          "type": "u8"
+        },
+        {
+          "name": "keys",
+          "type": {
+            "vec": "publicKey"
+          }
+        }
+      ]
+    },
+    {
       "name": "resetSqrtPrice",
       "accounts": [
         {
@@ -210,6 +263,11 @@
           "isSigner": false
         },
         {
+          "name": "operationState",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "rewardTokenMint",
           "isMut": false,
           "isSigner": false
@@ -249,7 +307,7 @@
       "accounts": [
         {
           "name": "rewardFunder",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
@@ -296,17 +354,22 @@
       "accounts": [
         {
           "name": "authority",
-          "isMut": true,
+          "isMut": false,
           "isSigner": true
         },
         {
           "name": "ammConfig",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
           "name": "poolState",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "operationState",
+          "isMut": false,
           "isSigner": false
         }
       ],
@@ -915,6 +978,36 @@
               "array": [
                 "u64",
                 3
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OperationState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "operationOwners",
+            "type": {
+              "array": [
+                "publicKey",
+                10
+              ]
+            }
+          },
+          {
+            "name": "whitelistMints",
+            "type": {
+              "array": [
+                "publicKey",
+                100
               ]
             }
           }
@@ -1884,6 +1977,86 @@
           "index": false
         }
       ]
+    },
+    {
+      "name": "LiquidityChangeEvent",
+      "fields": [
+        {
+          "name": "poolState",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "tick",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "tickLower",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "tickUpper",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "liquidityBefore",
+          "type": "u128",
+          "index": false
+        },
+        {
+          "name": "liquidityAfter",
+          "type": "u128",
+          "index": false
+        }
+      ]
+    },
+    {
+      "name": "PriceChangeEvent",
+      "fields": [
+        {
+          "name": "poolState",
+          "type": "publicKey",
+          "index": false
+        },
+        {
+          "name": "tickBefore",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "tickAfter",
+          "type": "i32",
+          "index": false
+        },
+        {
+          "name": "sqrtPriceX64Before",
+          "type": "u128",
+          "index": false
+        },
+        {
+          "name": "sqrtPriceX64After",
+          "type": "u128",
+          "index": false
+        },
+        {
+          "name": "liquidityBefore",
+          "type": "u128",
+          "index": false
+        },
+        {
+          "name": "liquidityAfter",
+          "type": "u128",
+          "index": false
+        },
+        {
+          "name": "zeroForOne",
+          "type": "bool",
+          "index": false
+        }
+      ]
     }
   ],
   "errors": [
@@ -1920,7 +2093,7 @@
     {
       "code": 6006,
       "name": "InvaildTickIndex",
-      "msg": "Tick index of lower must be smaller than upper"
+      "msg": "Tick out of range"
     },
     {
       "code": 6007,
@@ -1949,116 +2122,126 @@
     },
     {
       "code": 6012,
+      "name": "InvalidTickArrayBoundary",
+      "msg": "Invaild tick array boundary"
+    },
+    {
+      "code": 6013,
       "name": "SqrtPriceLimitOverflow",
       "msg": "Square root price limit overflow"
     },
     {
-      "code": 6013,
+      "code": 6014,
       "name": "SqrtPriceX64",
       "msg": "sqrt_price_x64 out of range"
     },
     {
-      "code": 6014,
+      "code": 6015,
       "name": "LiquiditySubValueErr",
       "msg": "Liquidity sub delta L must be smaller than before"
     },
     {
-      "code": 6015,
+      "code": 6016,
       "name": "LiquidityAddValueErr",
       "msg": "Liquidity add delta L must be greater, or equal to before"
     },
     {
-      "code": 6016,
+      "code": 6017,
       "name": "InvaildLiquidity",
       "msg": "Invaild liquidity when update position"
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "ForbidBothZeroForSupplyLiquidity",
       "msg": "Both token amount must not be zero while supply liquidity"
     },
     {
-      "code": 6018,
+      "code": 6019,
+      "name": "LiquidityInsufficient",
+      "msg": "Liquidity insufficient"
+    },
+    {
+      "code": 6020,
       "name": "TransactionTooOld",
       "msg": "Transaction too old"
     },
     {
-      "code": 6019,
+      "code": 6021,
       "name": "PriceSlippageCheck",
       "msg": "Price slippage check"
     },
     {
-      "code": 6020,
+      "code": 6022,
       "name": "TooLittleOutputReceived",
       "msg": "Too little output received"
     },
     {
-      "code": 6021,
+      "code": 6023,
       "name": "TooMuchInputPaid",
       "msg": "Too much input paid"
     },
     {
-      "code": 6022,
+      "code": 6024,
       "name": "InvaildSwapAmountSpecified",
       "msg": "Swap special amount can not be zero"
     },
     {
-      "code": 6023,
+      "code": 6025,
       "name": "InvalidInputPoolVault",
       "msg": "Input pool vault is invalid"
     },
     {
-      "code": 6024,
+      "code": 6026,
       "name": "TooSmallInputOrOutputAmount",
       "msg": "Swap input or output amount is too small"
     },
     {
-      "code": 6025,
+      "code": 6027,
       "name": "InvalidRewardIndex",
       "msg": "Invalid reward index"
     },
     {
-      "code": 6026,
+      "code": 6028,
       "name": "FullRewardInfo",
       "msg": "The init reward token reach to the max"
     },
     {
-      "code": 6027,
+      "code": 6029,
       "name": "RewardTokenAlreadyInUse",
       "msg": "The init reward token already in use"
     },
     {
-      "code": 6028,
+      "code": 6030,
       "name": "ExceptPoolVaultMint",
       "msg": "The reward tokens must contain one of pool vault mint except the last reward"
     },
     {
-      "code": 6029,
+      "code": 6031,
       "name": "InvalidRewardInitParam",
       "msg": "Invalid reward init param"
     },
     {
-      "code": 6030,
+      "code": 6032,
       "name": "InvalidRewardDesiredAmount",
       "msg": "Invalid collect reward desired amount"
     },
     {
-      "code": 6031,
+      "code": 6033,
       "name": "InvalidRewardInputAccountNumber",
       "msg": "Invalid collect reward input account number"
     },
     {
-      "code": 6032,
+      "code": 6034,
       "name": "InvalidRewardPeriod",
       "msg": "Invalid reward period"
     },
     {
-      "code": 6033,
+      "code": 6035,
       "name": "NotApproveUpdateRewardEmissiones",
       "msg": "Modification of emissiones is allowed within 72 hours from the end of the previous cycle"
     },
     {
-      "code": 6034,
+      "code": 6036,
       "name": "UnInitializedRewardInfo",
       "msg": "uninitialized reward info"
     }
