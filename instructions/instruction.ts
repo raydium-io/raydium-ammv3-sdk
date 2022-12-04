@@ -33,6 +33,7 @@ import {
   makeCreateWrappedNativeAccountInstructions,
   makeCloseAccountInstruction,
   getPoolRewardVaultAddress,
+  getOperationAddress,
 } from "../utils";
 
 import {
@@ -50,12 +51,13 @@ import {
   decreaseLiquidityInstruction,
   swapInstruction,
   swapRouterBaseInInstruction,
+  initializeRewardInstruction,
 } from "./user";
 import {
   createAmmConfigInstruction,
   updateAmmConfigInstruction,
-  initializeRewardInstruction,
   setRewardParamsInstruction,
+  createOperationAccountInstruction,
 } from "./admin";
 
 import { AmmPool } from "../pool";
@@ -152,6 +154,21 @@ export class AmmInstruction {
     ];
   }
 
+  public static async createOperationAccount(
+    ctx: Context,
+    authority: PublicKey
+  ): Promise<[PublicKey, TransactionInstruction]> {
+    const [address, _] = await getOperationAddress(ctx.program.programId);
+    return [
+      address,
+      await createOperationAccountInstruction(ctx.program, {
+        owner: authority,
+        operationState: address,
+        systemProgram: SystemProgram.programId,
+      }),
+    ];
+  }
+
   public static async setAmmConfigNewOwner(
     ctx: Context,
     ammConfig: PublicKey,
@@ -223,6 +240,7 @@ export class AmmInstruction {
     authority: PublicKey,
     ammPool: AmmPool,
     rewardTokenMint: PublicKey,
+    operation: PublicKey,
     openTime: BN,
     endTime: BN,
     emissionsPerSecond: number
@@ -263,6 +281,7 @@ export class AmmInstruction {
         rewardTokenVault: rewardTokenVault,
         funderTokenAccount: tokenAccount,
         rewardTokenMint: rewardTokenMint,
+        operationState: operation,
         ammConfig: ammPool.poolState.ammConfig,
         poolState: ammPool.address,
         tokenProgram: TOKEN_PROGRAM_ID,

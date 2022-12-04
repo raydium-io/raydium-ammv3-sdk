@@ -7,6 +7,7 @@ import {
   POSITION_SEED,
   TICK_ARRAY_SEED,
   POOL_REWARD_VAULT_SEED,
+  OPERATION_SEED,
   u16ToBytes,
   i32ToBytes,
 } from "./seed";
@@ -120,6 +121,16 @@ export async function getNftMetadataAddress(
       nftMint.toBuffer(),
     ],
     metaplex.programs.metadata.MetadataProgram.PUBKEY
+  );
+  return [address, bump];
+}
+
+export async function getOperationAddress(
+  programId: PublicKey
+): Promise<[PublicKey, number]> {
+  const [address, bump] = await PublicKey.findProgramAddress(
+    [OPERATION_SEED],
+    programId
   );
   return [address, bump];
 }

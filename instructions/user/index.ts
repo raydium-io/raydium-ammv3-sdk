@@ -6,3 +6,4 @@ export * from "./openPosition";
 export * from "./swap";
 export * from "./swapRouterBaseIn";
 export * from "./updateRewardInfo";
+export * from "./initializeReward";

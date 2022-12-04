@@ -13,6 +13,8 @@ export const POSITION_SEED = Buffer.from(
 );
 export const TICK_ARRAY_SEED = Buffer.from(anchor.utils.bytes.utf8.encode("tick_array"));
 
+export const OPERATION_SEED = Buffer.from(anchor.utils.bytes.utf8.encode("operation")); 
+
 export function u16ToBytes(num: number) {
     const arr = new ArrayBuffer(2)
     const view = new DataView(arr)
